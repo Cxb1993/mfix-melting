@@ -58,7 +58,7 @@
 ! Convection source
       DOUBLE PRECISION Qcv
 	  DOUBLE PRECISION EP_TOT
-	  INTEGER I, fM
+	  INTEGER I, fM, J
 
 
 ! Obtain the temperature of the gas. --> Not interpolated.
@@ -78,7 +78,8 @@
 	  
 	  
 	  
-	  DO I = IJKSTART3, IJKEND3 
+	  DO J = 2, PART_CELLS(NP,1) + 1
+		I = PART_CELLS(NP,J)
 		IF(.NOT.FLUID_AT(I)) CYCLE
 		IF(PART_VOL_INTERSEC(I,NP) == 0.0d0) CYCLE
 		
@@ -92,7 +93,7 @@
 		Qcv = GAMMA_CP * (Tg - DES_T_s_NEW(NP)) * Sa * &
 			PART_VOL_INTERSEC(I,NP)/p_vol * EP_G(I)/EP_TOT
 		Q_Source(NP) = Q_Source(NP) + Qcv
-		DES_ENERGY_SOURCE(IJK) = DES_ENERGY_SOURCE(IJK) - Qcv * DTSOLID
+		DES_ENERGY_SOURCE(I) = DES_ENERGY_SOURCE(I) - Qcv * DTSOLID
 		
 		DO fM = 1, SMAX
 			Qcv = K_S(I,fM)/DES_RADIUS(NP)*(T_S(I,fM) - DES_T_S_NEW(NP))*Sa* &

@@ -45,6 +45,7 @@
       DOUBLE PRECISION INTERP_WEIGHTS(2**3)
 	  DOUBLE PRECISION S_RC_CONT(DIMENSION_3)
 	  DOUBLE PRECISION ALPHA_TOT
+	  INTEGER J, pIJK
 
 ! Functions
 !---------------------------------------------------------------------//
@@ -133,9 +134,14 @@
 !---End Dan Moser Changes--------------------------------!
 
 ! Calculate reaction rates and interphase mass transfer
-            IF(ANY_SPECIES_EQ) CALL DES_RRATES0(NP, M, IJK, &
-               INTERP_IJK, INTERP_WEIGHTS, FOCUS)
-
+            IF(ANY_SPECIES_EQ) THEN
+				DO J = 2, PART_CELLS(NP,1) + 1
+					pIJK = PART_CELLS(NP,J)
+					CALL DES_RRATES0(NP, M, pIJK, &
+						INTERP_IJK, INTERP_WEIGHTS, FOCUS)
+				END DO
+			END IF
+			
          ENDDO lNP_LP ! End loop over all particles
       ENDDO IJK_LP ! End loop over fluid cells
 
