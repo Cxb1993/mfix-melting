@@ -302,13 +302,13 @@
         CALL PARTIAL_ELIM_S (T_G, T_S, VXGAMA, A_M, B_M, IER)
 		
 		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
+		 !open (unit = 2, file = "matrices")
+		 !DO I_WRITE = 1, DIMENSION_3
+			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 !END DO
+		 !CLOSE(2)
 		 !END DEBUGGING
 
       CALL CALC_RESID_S (T_G, A_M, B_M, 0, NUM_RESID(RESID_T,0),&
