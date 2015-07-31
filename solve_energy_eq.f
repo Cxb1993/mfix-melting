@@ -123,13 +123,13 @@
       DO M = 0, TMP_SMAX
          CALL INIT_AB_M (A_M, B_M, IJKMAX2, M, IER)
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
       ENDDO
 
@@ -245,13 +245,13 @@
             CpxFlux_T, M, A_M, B_M, IER)
 			
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
 
 ! calculate standard bc
@@ -259,26 +259,26 @@
             BC_HW_T_S(1,M), BC_C_T_S(1,M), M, A_M, B_M, IER)
 			
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
 
 ! set the source terms in a and b matrix equation form
          CALL SOURCE_PHI (S_P, S_C, EPS, T_S(1,M), M, A_M, B_M, IER)
 		 
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
 
 ! Add point sources.
@@ -286,13 +286,13 @@
             PS_CpxMFLOW_s(:,M), M, A_M, B_M, IER)
 			
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
 
       ENDDO   ! end do (m=1,tmp_smax)
@@ -302,13 +302,13 @@
         CALL PARTIAL_ELIM_S (T_G, T_S, VXGAMA, A_M, B_M, IER)
 		
 		 !FOR DEBUGGING PURPOSES
-		 !open (unit = 2, file = "matrices")
-		 !DO I_WRITE = 1, DIMENSION_3
-			!WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			!A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			!A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 !END DO
-		 !CLOSE(2)
+		 open (unit = 2, file = "matrices")
+		 DO I_WRITE = 1, DIMENSION_3
+			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+		 END DO
+		 CLOSE(2)
 		 !END DEBUGGING
 
       CALL CALC_RESID_S (T_G, A_M, B_M, 0, NUM_RESID(RESID_T,0),&
