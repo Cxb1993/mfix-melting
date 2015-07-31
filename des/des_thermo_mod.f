@@ -46,6 +46,8 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Qint !(PARTICLES)
 ! Heat transfer source to the particle.
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Q_Source
+! Heat transfer source to save the value of Q_Source while assigning heats of reaction
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Q_Source_bak
 ! Previous time step's rate of heat transfer. Used for Adams-Bashforth
 ! time integration scheme
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: Q_Source0

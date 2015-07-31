@@ -270,20 +270,21 @@ CONTAINS
          Allocate( DES_X_s( MAX_PIP, DIMENSION_N_S))
 ! Total rate of heat transfer to individual particles.
          Allocate( Q_Source( MAX_PIP ) )
+         Allocate( Q_Source_bak( MAX_PIP ) )
 ! Average solids temperature in fluid cell
          Allocate(avgDES_T_s(DIMENSION_3) )
 
          Allocate(DES_ENERGY_SOURCE(DIMENSION_3) )
-		 Allocate(DES_ENERGY_SOURCE_S(DIMENSION_3, DIMENSION_M) )
-		 
-		 Allocate(ALPHA_S(DIMENSION_M) )
-		 ALPHA_S(:) = 0.0d0
-		 ALPHA_S(1) = 30.0d0
+         Allocate(DES_ENERGY_SOURCE_S(DIMENSION_3, DIMENSION_M) )
+         
+         Allocate(ALPHA_S(DIMENSION_M) )
+         ALPHA_S(:) = 0.0d0
+         ALPHA_S(1) = 30.0d0
 
-		 Allocate(PART_VOL_INTERSEC(DIMENSION_3, MAX_PIP) )
-		 Allocate(PART_CELLS(MAX_PIP, DIMENSION_3 + 1) )
-		 Allocate(TOT_VOL_INTERSEC(DIMENSION_3) )
-		 Allocate(S_RC_DES(DIMENSION_3) )
+         Allocate(PART_VOL_INTERSEC(DIMENSION_3, MAX_PIP) )
+         Allocate(PART_CELLS(MAX_PIP, DIMENSION_3 + 1) )
+         Allocate(TOT_VOL_INTERSEC(DIMENSION_3) )
+         Allocate(S_RC_DES(DIMENSION_3) )
 		 
 ! Allocate the history variables for Adams-Bashforth integration
          IF (INTG_ADAMS_BASHFORTH) &

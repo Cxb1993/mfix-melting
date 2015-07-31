@@ -133,14 +133,15 @@
             END IF
 !---End Dan Moser Changes--------------------------------!
 
+            Q_Source_bak(:) = Q_Source(:)
 ! Calculate reaction rates and interphase mass transfer
             IF(ANY_SPECIES_EQ) THEN
-				DO J = 2, PART_CELLS(NP,1) + 1
-					pc = PART_CELLS(NP,J)
-					CALL DES_RRATES0(NP, M, pc, &
-						INTERP_IJK, INTERP_WEIGHTS, FOCUS)
-				END DO
-			END IF
+               DO J = 2, PART_CELLS(NP,1) + 1
+                  pc = PART_CELLS(NP,J)
+                  CALL DES_RRATES0(NP, M, pc, &
+                    INTERP_IJK, INTERP_WEIGHTS, FOCUS)
+               END DO
+            END IF
 			
          ENDDO lNP_LP ! End loop over all particles
       ENDDO IJK_LP ! End loop over fluid cells

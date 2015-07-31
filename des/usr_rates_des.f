@@ -95,7 +95,7 @@
 
       IF((DES_T_S_NEW(NP).ge.463.0d0).AND.(Q_SOURCE(NP).gt.0.0d0)) THEN
          !DES_RATES(MELTING) = Q_Source(NP)/10004.124
-         DES_RATES(Melting) = Q_Source(NP)/5034.0d0/GAS_CONST_cal
+         DES_RATES(Melting) = Q_Source_bak(NP)/5034.0d0/GAS_CONST_cal
       ELSE
          DES_RATES(Melting) = 0.0
       END IF

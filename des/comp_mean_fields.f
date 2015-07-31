@@ -79,7 +79,7 @@
       use desmpi
       USE mfix_pic
       USE functions
-	  use indices, only: I_OF, J_OF, K_OF
+      use indices, only: I_OF, J_OF, K_OF
 
       IMPLICIT NONE
 
@@ -96,57 +96,57 @@
       DOUBLE PRECISION :: OoSOLVOL
 ! PVOL times statistical weight
       DOUBLE PRECISION :: VOL_WT, VOL_INT
-	  INTEGER :: I, J, K
+      INTEGER :: I, J, K
 !Min and max extents for cell and particle center
       DOUBLE PRECISION, DIMENSION(3):: BMIN,BMAX,X_C
-	  DOUBLE PRECISION :: VOL_TOL
+      DOUBLE PRECISION :: VOL_TOL
 
-	  VOL_TOL = 0.01d0
+      VOL_TOL = 0.0001d0
       SOLVOLINC(:,:) = ZERO
 	  
-	  PART_VOL_INTERSEC(:,:) = ZERO
-	  TOT_VOL_INTERSEC(:) = ZERO
-	  PART_CELLS(:,:) = ZERO
+      PART_VOL_INTERSEC(:,:) = ZERO
+      TOT_VOL_INTERSEC(:) = ZERO
+      PART_CELLS(:,:) = ZERO
 
       DES_U_s(:,:) = ZERO
       DES_V_s(:,:) = ZERO
       DES_W_s(:,:) = ZERO
 
-	  DO IJK = IJKSTART3, IJKEND3
+      DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
 		 
-		 I = I_OF(IJK)
-		 J = J_OF(IJK)
-		 K = K_OF(IJK)
+         I = I_OF(IJK)
+         J = J_OF(IJK)
+         K = K_OF(IJK)
 		 
-		 BMIN = (/XE(I-1),YN(J-1),ZT(K-1)/)
-		 BMAX = (/XE(I),YN(J),ZT(K)/)
+         BMIN = (/XE(I-1),YN(J-1),ZT(K-1)/)
+         BMAX = (/XE(I),YN(J),ZT(K)/)
 		 
-		 DO NP=1,MAX_PIP
-			IF(.NOT.PEA(NP,1)) CYCLE
-			IF(PEA(NP,4)) CYCLE
-			M = PIJK(NP,5)
-			X_C(:) = DES_POS_NEW(:,NP)
+         DO NP=1,MAX_PIP
+            IF(.NOT.PEA(NP,1)) CYCLE
+            IF(PEA(NP,4)) CYCLE
+            M = PIJK(NP,5)
+            X_C(:) = DES_POS_NEW(:,NP)
             CALL VOL_INTERSECTION(BMIN-X_C,BMAX-X_C,DES_RADIUS(NP), & 
-				VOL(IJK)*VOL_TOL,VOL_INT)
-			IF(VOL_INT > 0.0d0) THEN
-				PART_CELLS(NP,1) = PART_CELLS(NP,1) + 1
-				PART_CELLS(NP,PART_CELLS(NP,1)+1) = IJK
-				PART_VOL_INTERSEC(IJK,NP)=PART_VOL_INTERSEC(IJK,NP)+VOL_INT
-				TOT_VOL_INTERSEC(IJK)=TOT_VOL_INTERSEC(IJK)+VOL_INT
-				SOLVOLINC(IJK,M) = SOLVOLINC(IJK,M)+VOL_INT
-			END IF
+              VOL(IJK)*VOL_TOL,VOL_INT)
+            IF(VOL_INT > 0.0d0) THEN
+               PART_CELLS(NP,1) = PART_CELLS(NP,1) + 1
+               PART_CELLS(NP,PART_CELLS(NP,1)+1) = IJK
+               PART_VOL_INTERSEC(IJK,NP)=PART_VOL_INTERSEC(IJK,NP)+VOL_INT
+               TOT_VOL_INTERSEC(IJK)=TOT_VOL_INTERSEC(IJK)+VOL_INT
+               SOLVOLINC(IJK,M) = SOLVOLINC(IJK,M)+VOL_INT
+            END IF
 			
-			DES_U_S(IJK,M) = DES_U_S(IJK,M) +                             &
-				DES_VEL_NEW(1,NP)*VOL_INT
-			DES_V_S(IJK,M) = DES_V_S(IJK,M) +                             &
-				DES_VEL_NEW(2,NP)*VOL_INT
-			DES_W_S(IJK,M) = DES_W_S(IJK,M) +                    		&
-				DES_VEL_NEW(3,NP)*VOL_INT
+            DES_U_S(IJK,M) = DES_U_S(IJK,M) +                         &
+              DES_VEL_NEW(1,NP)*VOL_INT
+            DES_V_S(IJK,M) = DES_V_S(IJK,M) +                         &
+              DES_VEL_NEW(2,NP)*VOL_INT
+            DES_W_S(IJK,M) = DES_W_S(IJK,M) +                         &
+              DES_VEL_NEW(3,NP)*VOL_INT
 		 
-		 ENDDO
+         ENDDO
 		 
-		 DO M = 1, DES_MMAX
+         DO M = 1, DES_MMAX
             IF(SOLVOLINC(IJK,M).GT.ZERO) THEN
                OoSOLVOL = ONE/SOLVOLINC(IJK,M)
                DES_U_s(IJK,M) = DES_U_s(IJK,M)*OoSOLVOL

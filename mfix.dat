@@ -111,7 +111,7 @@
 !---------------------------------------------------------------------//
   MMAX = 2
 
-  PARTICLES  = 8   ! Number of partiles in the system.
+  PARTICLES  = 4   ! Number of partiles in the system.
 
 ! Particle-particle:
   KN =   1.0d6               ! Normal collision spring constant

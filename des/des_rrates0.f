@@ -93,7 +93,7 @@
 ! Local continuum solid phase values
       DOUBLE PRECISION :: lRsp(NMAX(1)) ! Rate of species production
       DOUBLE PRECISION :: lRsc(NMAX(1)) ! Rate of species consumption
-	  DOUBLE PRECISION :: lHoRs_TFM, llHoRs_TFM ! Heat of reaction
+      DOUBLE PRECISION :: lHoRs_TFM, llHoRs_TFM ! Heat of reaction
       DOUBLE PRECISION :: SUMlRs
 
 ! Interphase mass transfer
@@ -102,7 +102,7 @@
 ! Reaction limiters. If a species mass fraction is less than this
 ! value, then the reaction is suppressed.
       DOUBLE PRECISION :: speciesLimiter
-	  DOUBLE PRECISION :: p_vol
+      DOUBLE PRECISION :: p_vol
 
 ! External functions
 !---------------------------------------------------------------------//
@@ -112,14 +112,15 @@
 ! Alias particle temperature.
       lTp = DES_T_s_NEW(NP)
 ! Particle volume
-	  p_vol = 4.0d0/3.0d0*pi*DES_RADIUS(NP)**3
+      p_vol = 4.0d0/3.0d0*pi*DES_RADIUS(NP)**3
 ! Initialize storage arrays
       DES_RATES(:) = ZERO
       lRgp(:) = ZERO
       lRgc(:) = ZERO
-	  lRsp(:) = ZERO
-	  lRsc(:) = ZERO
+      lRsp(:) = ZERO
+      lRsc(:) = ZERO
       lHoRg = ZERO
+      lHoRs_TFM = ZERO
 
 ! Set the species limiter:
       speciesLimiter = ZERO_X_gs
@@ -136,10 +137,10 @@
 
 ! Initialize local loop arrays
          llHoRg = ZERO
-		 lHoRs = ZERO
-		 llHoRs_TFM = ZERO
+         lHoRs = ZERO
+         llHoRs_TFM = ZERO
          RxH = ZERO
-		 RxHs = ZERO
+         RxHs = ZERO
 
 ! Calculate the rate of formation/consumption for each species.
 !---------------------------------------------------------------------//
@@ -177,20 +178,20 @@
                IF(lRate < ZERO) THEN
                   IF(X_s(IJK,M,N) > speciesLimiter) THEN
                      lRsc(N) = lRsc(N) - lRate
-					 !IF(M /= mXfr) RxHs = RxHs +                         &
-                     !   lRate*CALC_H(T_S(IJK,M),M,N)
-					 !This is a hack and may not work for reactions involving
-					 !multiple species or reactions where the continuous phase
-					 !is the source phase
-					 RxHs = RxHs + lRate*CALC_H(T_S(IJK,M),M,N)
+!IF(M /= mXfr) RxHs = RxHs +                         &
+!   lRate*CALC_H(T_S(IJK,M),M,N)
+!This is a hack and may not work for reactions involving
+!multiple species or reactions where the continuous phase
+!is the source phase
+                     RxHs = RxHs + lRate*CALC_H(T_S(IJK,M),M,N)
                   ELSE
                      DES_RATES(H) = ZERO
                      CYCLE RXN_LP
                   ENDIF
                ELSE
                   lRsp(N) = lRsp(N) + lRate
-				  !IF(M /= mXfr) RxHs = RxHs + lRate*CALC_H(lTp,M,N)
-				  RxHs = RxHs + lRate*CALC_H(lTp,M,N)
+!IF(M /= mXfr) RxHs = RxHs + lRate*CALC_H(lTp,M,N)
+                  RxHs = RxHs + lRate*CALC_H(lTp,M,N)
                ENDIF
 ! Discrete Solids Phase:
             ELSE
@@ -223,8 +224,8 @@
 ! Gas phase enthalpy chnage from energy equation derivation.
                   IF(M == 0) THEN
                      llHORg = llHORg + CALC_H(T_g(IJK),0,N) * lRate
-				  ELSE IF(M == 1) THEN
-					 llHoRs_TFM = llHoRs_TFM + CALC_H(T_s(IJK,M),M,N) * lRate
+                  ELSE IF(M == 1) THEN
+                     llHoRs_TFM = llHoRs_TFM + CALC_H(T_s(IJK,M),M,N) * lRate
 ! Solid phase enthalpy change from energy equation derivation.
                   ELSE
                      lHORs = lHORs + CALC_H(lTp,M,N) * lRate
@@ -235,26 +236,26 @@
 ! complete heat of reaction for Reaction H.
                llHORg = llHORg - RxH
                lHORs = lHORs + RxH
-			   llHoRs_TFM = llHoRs_TFM - RxHs
-			   lHORs = lHORs + RxHs
+               llHoRs_TFM = llHoRs_TFM - RxHs
+               lHORs = lHORs + RxHs
 
 ! Convert the heat of reaction to the appropriate units (if SI), and
 ! store in the global array.
                IF(UNITS == 'SI') THEN
                   lHORg = lHORg + 4.183925d3*llHORg
-				  lHoRs_TFM = lHoRs_TFM + 4.183925d3*llHoRs_TFM
+                  lHoRs_TFM = lHoRs_TFM + 4.183925d3*llHoRs_TFM
                   Q_Source(NP) = Q_Source(NP) - 4.183925d3*lHORs
                ELSE
                   lHORg = lHORg + llHORg
-				  lHoRs_TFM = lHoRs_TFM + llHoRs_TFM
+                  lHoRs_TFM = lHoRs_TFM + llHoRs_TFM
                   Q_Source(NP) = Q_Source(NP) - lHORs
                ENDIF
             ELSE
 ! User-defined heat of reaction.
                HOR_g(IJK) = HOR_g(IJK) + &
                   DES_Reaction(H)%HoR(0) * DES_RATES(H)
-			   HOR_s(IJK,1) = HOR_s(IJK,1) + &
-			      DES_Reaction(H)%HoR(1) * DES_RATES(H)
+               HOR_s(IJK,1) = HOR_s(IJK,1) + &
+                  DES_Reaction(H)%HoR(1) * DES_RATES(H)
                Q_Source(NP) = Q_Source(NP) - &
                   DES_Reaction(H)%HoR(pM) * DES_RATES(H)
             ENDIF
@@ -262,7 +263,7 @@
 
 ! Update rate of interphase mass transfer.
 !---------------------------------------------------------------------//
-		 DO LM=1, (DIMENSION_LM+DIMENSION_M-1)
+         DO LM=1, (DIMENSION_LM+DIMENSION_M-1)
              lRPhase(LM) = lRPhase(LM) +                       &
                 DES_RATES(H) * DES_Reaction(H)%rPHASE(LM)
          ENDDO
@@ -297,7 +298,7 @@
       DES_R_gc(IJK,:) = DES_R_gc(IJK,:) + lRgc(:) * DTSOLID
       DES_R_PHASE(IJK,:) = DES_R_PHASE(IJK,:) + lRPhase(:) * DTSOLID
       DES_HOR_G(IJK) = DES_HOR_G(IJK) + lHoRg * DTSOLID
-	  DES_HOR_S(IJK) = DES_HOR_S(IJK) + lHoRs_TFM * DTSOLID
+      DES_HOR_S(IJK) = DES_HOR_S(IJK) + lHoRs_TFM * DTSOLID
       DES_SUM_R_g(IJK) = DES_SUM_R_g(IJK) + SUMlRg * DTSOLID
 
       DES_R_sp_TFM(IJK,:) = DES_R_sp_TFM(IJK,:) + lRsp(:) * DTSOLID
