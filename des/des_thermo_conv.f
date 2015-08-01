@@ -25,8 +25,8 @@
       Use param1
       Use physprop
       Use usr
-	  USE compar
-	  use functions
+      USE compar
+      use functions
 
       IMPLICIT NONE
 
@@ -53,12 +53,10 @@
       DOUBLE PRECISION Tg
 ! Surface area of particle
       DOUBLE PRECISION Sa
-! Particle volume
-	  DOUBLE PRECISION p_vol
 ! Convection source
       DOUBLE PRECISION Qcv
-	  DOUBLE PRECISION EP_TOT
-	  INTEGER I, fM, J
+      DOUBLE PRECISION EP_TOT
+      INTEGER I, fM, J
 
 
 ! Obtain the temperature of the gas. --> Not interpolated.
@@ -67,7 +65,6 @@
       !CALL DES_CALC_GAMMA(NP, IJK, GAMMA_CP)
 ! Calculate the surface area of the particle
       Sa = 4.0d0 * Pi * DES_RADIUS(NP) * DES_RADIUS(NP)
-	  p_vol = 4.0d0/3.0d0*pi*DES_RADIUS(NP)**3
 ! Calculate the rate of heat transfer to the particle
       !Qcv = GAMMA_CP * Sa * (Tg - DES_T_s_NEW(NP))
 ! Store convection source in global energy source array.
@@ -78,29 +75,30 @@
 	  
 	  
 	  
-	  DO J = 2, PART_CELLS(NP,1) + 1
-		I = PART_CELLS(NP,J)
-		IF(.NOT.FLUID_AT(I)) CYCLE
-		IF(PART_VOL_INTERSEC(I,NP) == 0.0d0) CYCLE
+      DO J = 2, PART_CELLS(NP,1) + 1
+         I = PART_CELLS(NP,J)
+         IF(.NOT.FLUID_AT(I)) CYCLE
+         IF(PART_VOL_INTERSEC(I,NP) == 0.0d0) CYCLE
 		
-		EP_TOT = EP_G(I)
-		DO fM = 1, SMAX
-			EP_TOT = EP_TOT + EP_S(I,fM)
-		END DO		
+         EP_TOT = EP_G(I)
+         DO fM = 1, SMAX
+            EP_TOT = EP_TOT + EP_S(I,fM)
+         END DO		
         
-		Tg = T_g(I)
-		CALL DES_CALC_GAMMA(NP, I, GAMMA_CP)
-		Qcv = GAMMA_CP * (Tg - DES_T_s_NEW(NP)) * Sa * &
-			PART_VOL_INTERSEC(I,NP)/p_vol * EP_G(I)/EP_TOT
-		Q_Source(NP) = Q_Source(NP) + Qcv
-		DES_ENERGY_SOURCE(I) = DES_ENERGY_SOURCE(I) - Qcv * DTSOLID
+         Tg = T_g(I)
+         CALL DES_CALC_GAMMA(NP, I, GAMMA_CP)
+         Qcv = GAMMA_CP * (Tg - DES_T_s_NEW(NP)) * Sa * &
+           PART_VOL_INTERSEC(I,NP)/PVOL(NP) * EP_G(I)/EP_TOT
+         Q_Source(NP) = Q_Source(NP) + Qcv
+         DES_ENERGY_SOURCE(I) = DES_ENERGY_SOURCE(I) - Qcv * DTSOLID
 		
-		DO fM = 1, SMAX
-			Qcv = K_S(I,fM)/DES_RADIUS(NP)*(T_S(I,fM) - DES_T_S_NEW(NP))*Sa* &
-				PART_VOL_INTERSEC(I,NP)/p_vol*EP_S(I,fM)/EP_TOT
-			Q_SOURCE(NP) = Q_SOURCE(NP) + Qcv
-			DES_ENERGY_SOURCE_S(I,fM) = DES_ENERGY_SOURCE_S(I,fM) - Qcv * DTSOLID
-		END DO
+         DO fM = 1, SMAX
+            Qcv = K_S(I,fM)/DES_RADIUS(NP)*(T_S(I,fM)-DES_T_S_NEW(NP)) &
+              * Sa * PART_VOL_INTERSEC(I,NP)/PVOL(NP)*EP_S(I,fM)/EP_TOT
+            Q_SOURCE(NP) = Q_SOURCE(NP) + Qcv
+            DES_ENERGY_SOURCE_S(I,fM)= DES_ENERGY_SOURCE_S(I,fM)-Qcv * & 
+              DTSOLID
+         END DO
       END DO
 
 ! Write out the debugging information.

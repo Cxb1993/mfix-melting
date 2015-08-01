@@ -12,7 +12,7 @@
       SUBROUTINE DES_RADIATION(I, iM, iIJK, FOCUS)
 
       USE constant
-	  USE geometry
+      USE geometry
       USE des_thermo
       USE discretelement
       USE fldvar
@@ -47,15 +47,15 @@
       DOUBLE PRECISION :: Tenv
 ! Particle Emmisivity
       DOUBLE PRECISION :: lEm
-	  INTEGER :: IJK, J
+      INTEGER :: IJK, J
 	  
-	  DO J = 2, PART_CELLS(I,1) + 1 
-		IJK = PART_CELLS(I,J)
-		IF(.NOT.FLUID_AT(IJK)) CYCLE
-        IF(PART_VOL_INTERSEC(IJK,I) == 0.0d0) CYCLE
-        Q_SOURCE(I) = Q_SOURCE(I) + &
-			PART_VOL_INTERSEC(IJK,I)/TOT_VOL_INTERSEC(IJK)*&
-			S_RC_DES(IJK)*VOL(IJK)
+      DO J = 2, PART_CELLS(I,1) + 1 
+         IJK = PART_CELLS(I,J)
+         IF(.NOT.FLUID_AT(IJK)) CYCLE
+         IF(PART_VOL_INTERSEC(IJK,I) == 0.0d0) CYCLE
+         Q_SOURCE(I) = Q_SOURCE(I) + &
+           PART_VOL_INTERSEC(IJK,I)/TOT_VOL_INTERSEC(IJK)*&
+           S_RC_DES(IJK)*VOL(IJK)
       END DO
 
       RETURN

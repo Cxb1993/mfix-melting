@@ -82,7 +82,7 @@
       DOUBLE PRECISION :: lHoRs
 
       DOUBLE PRECISION :: RxH
-	  DOUBLE PRECISION :: RxHs
+      DOUBLE PRECISION :: RxHs
 
 ! Local gas phase values.
       DOUBLE PRECISION :: lRgp(NMAX(0)) ! Rate of species production
@@ -102,7 +102,6 @@
 ! Reaction limiters. If a species mass fraction is less than this
 ! value, then the reaction is suppressed.
       DOUBLE PRECISION :: speciesLimiter
-      DOUBLE PRECISION :: p_vol
 
 ! External functions
 !---------------------------------------------------------------------//
@@ -111,8 +110,6 @@
 
 ! Alias particle temperature.
       lTp = DES_T_s_NEW(NP)
-! Particle volume
-      p_vol = 4.0d0/3.0d0*pi*DES_RADIUS(NP)**3
 ! Initialize storage arrays
       DES_RATES(:) = ZERO
       lRgp(:) = ZERO
@@ -152,7 +149,8 @@
 ! Index for interphase mass transfer. For a gas/solid reaction, the
 ! index is stored with the gas phase.
             mXfr = DES_Reaction(H)%Species(lN)%mXfr
-            lRate = PART_VOL_INTERSEC(IJK,NP)/p_vol * DES_RATES(H) * DES_Reaction(H)%Species(lN)%MWxStoich
+            lRate = PART_VOL_INTERSEC(IJK,NP)/PVOL(NP)*DES_RATES(H)* &
+              DES_Reaction(H)%Species(lN)%MWxStoich
 ! Gas Phase:
             IF(M == 0) THEN
 ! Consumption of gas phase species.
@@ -220,7 +218,7 @@
 ! Rate of formation/consumption for speices N
                   lRate = DES_RATES(H) * &
                      DES_Reaction(H)%Species(lN)%MWxStoich * &
-					 PART_VOL_INTERSEC(IJK,NP)/p_vol
+                       PART_VOL_INTERSEC(IJK,NP)/PVOL(NP)
 ! Gas phase enthalpy chnage from energy equation derivation.
                   IF(M == 0) THEN
                      llHORg = llHORg + CALC_H(T_g(IJK),0,N) * lRate

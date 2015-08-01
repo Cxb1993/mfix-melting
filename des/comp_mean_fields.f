@@ -96,10 +96,12 @@
       DOUBLE PRECISION :: OoSOLVOL
 ! PVOL times statistical weight
       DOUBLE PRECISION :: VOL_WT, VOL_INT
-      INTEGER :: I, J, K
+      INTEGER :: I, J, K, IJK_INDEX
 !Min and max extents for cell and particle center
       DOUBLE PRECISION, DIMENSION(3):: BMIN,BMAX,X_C
       DOUBLE PRECISION :: VOL_TOL
+      DOUBLE PRECISION :: VOL_SUM
+      DOUBLE PRECISION :: FRAC_INT
 
       VOL_TOL = 0.0001d0
       SOLVOLINC(:,:) = ZERO
@@ -112,40 +114,54 @@
       DES_V_s(:,:) = ZERO
       DES_W_s(:,:) = ZERO
 
-      DO IJK = IJKSTART3, IJKEND3
-         IF(.NOT.FLUID_AT(IJK)) CYCLE
+      DO NP=1,MAX_PIP
+         IF(.NOT.PEA(NP,1)) CYCLE
+         IF(PEA(NP,4)) CYCLE
+         M = PIJK(NP,5)
+         X_C(:) = DES_POS_NEW(:,NP)
+      
+         DO IJK = IJKSTART3, IJKEND3
+            IF(.NOT.FLUID_AT(IJK)) CYCLE
 		 
-         I = I_OF(IJK)
-         J = J_OF(IJK)
-         K = K_OF(IJK)
+            I = I_OF(IJK)
+            J = J_OF(IJK)
+            K = K_OF(IJK)
 		 
-         BMIN = (/XE(I-1),YN(J-1),ZT(K-1)/)
-         BMAX = (/XE(I),YN(J),ZT(K)/)
+            BMIN = (/XE(I-1),YN(J-1),ZT(K-1)/)
+            BMAX = (/XE(I),YN(J),ZT(K)/)
 		 
-         DO NP=1,MAX_PIP
-            IF(.NOT.PEA(NP,1)) CYCLE
-            IF(PEA(NP,4)) CYCLE
-            M = PIJK(NP,5)
-            X_C(:) = DES_POS_NEW(:,NP)
             CALL VOL_INTERSECTION(BMIN-X_C,BMAX-X_C,DES_RADIUS(NP), & 
               VOL(IJK)*VOL_TOL,VOL_INT)
             IF(VOL_INT > 0.0d0) THEN
                PART_CELLS(NP,1) = PART_CELLS(NP,1) + 1
                PART_CELLS(NP,PART_CELLS(NP,1)+1) = IJK
                PART_VOL_INTERSEC(IJK,NP)=PART_VOL_INTERSEC(IJK,NP)+VOL_INT
-               TOT_VOL_INTERSEC(IJK)=TOT_VOL_INTERSEC(IJK)+VOL_INT
-               SOLVOLINC(IJK,M) = SOLVOLINC(IJK,M)+VOL_INT
-            END IF
-			
+            END IF 
+         ENDDO
+         VOL_SUM = 0.0d0
+!Normalize volume fractions so they sum to total volume for each particle
+         DO IJK_INDEX = 2,PART_CELLS(NP,1)+1
+            IJK = PART_CELLS(NP,IJK_INDEX)
+            VOL_SUM = VOL_SUM + PART_VOL_INTERSEC(IJK,NP)
+         END DO
+         DO IJK_INDEX = 2,PART_CELLS(NP,1)+1
+            IJK = PART_CELLS(NP,IJK_INDEX)
+            FRAC_INT = PART_VOL_INTERSEC(IJK,NP)/VOL_SUM
+            VOL_INT = FRAC_INT*PVOL(NP)
+            PART_VOL_INTERSEC(IJK,NP) = VOL_INT
+            TOT_VOL_INTERSEC(IJK) = TOT_VOL_INTERSEC(IJK)+VOL_INT
+            SOLVOLINC(IJK,M) = SOLVOLINC(IJK,M)+VOL_INT
+
             DES_U_S(IJK,M) = DES_U_S(IJK,M) +                         &
               DES_VEL_NEW(1,NP)*VOL_INT
             DES_V_S(IJK,M) = DES_V_S(IJK,M) +                         &
               DES_VEL_NEW(2,NP)*VOL_INT
             DES_W_S(IJK,M) = DES_W_S(IJK,M) +                         &
               DES_VEL_NEW(3,NP)*VOL_INT
-		 
-         ENDDO
-		 
+         END DO
+      END DO
+      DO IJK = IJKSTART3, IJKEND3
+         IF(.NOT.FLUID_AT(IJK)) CYCLE
          DO M = 1, DES_MMAX
             IF(SOLVOLINC(IJK,M).GT.ZERO) THEN
                OoSOLVOL = ONE/SOLVOLINC(IJK,M)

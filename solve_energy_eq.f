@@ -84,7 +84,7 @@
 ! 12x - Unclassified
       INTEGER :: Err_l(0:numPEs-1)  ! local
       INTEGER :: Err_g(0:numPEs-1)  ! global
-	  INTEGER :: I_WRITE
+      INTEGER :: I_WRITE
 
 
 ! temporary use of global arrays:
