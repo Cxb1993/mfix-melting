@@ -237,7 +237,18 @@
             ENDIF
          ENDDO   ! end do (ijk=ijkstart3,ijkend3)
 		 
-		 IF(ANY(CALC_RADT_DES(:))) CALL DES_RAD(S_C, M)
+         IF(ANY(CALC_RADT_DES(:))) CALL DES_RAD(S_C, M)
+
+! determine size of terms
+         open (unit = 2, file = "energy_eq")
+         DO IJK = ijkstart3, ijkend3
+            IF(FLUID_AT(IJK)) THEN
+               WRITE (2,*) IJK,HOR_S(IJK,1)*VOL(IJK),S_RCS(IJK,1)*VOL(IJK),VXGAMA(IJK,1),S_C(IJK)
+            END IF
+         END DO
+         CLOSE(2)
+! end determine size of terms
+
 
 ! calculate the convection-diffusion terms
          CALL CONV_DIF_PHI (T_s(1,M), K_S(1,M), DISCRETIZE(6), &

@@ -45,7 +45,7 @@
          if(.not.pea(l,1)) cycle 
          pc = pc+1
          if(pea(l,4)) cycle 
-		 Q_Source(l) = Q_Source(l) + 100000.0d0
+		 Q_Source(l) = Q_Source(l) + 0.0d0
 	  end do
 
       RETURN
