@@ -245,7 +245,7 @@
 !  Comments:                                                           !
 !                                                                      !
 !^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^!
-      SUBROUTINE  DES_Hgm(S_C)
+      SUBROUTINE  DES_Hgm(S_C, S_P, M)
 
       USE compar
       Use constant
@@ -267,6 +267,10 @@
 !---------------------------------------------------------------------//
 ! Source term on RHS
       DOUBLE PRECISION, INTENT(INOUT) :: S_C(DIMENSION_3)
+! Source term on LHS
+      DOUBLE PRECISION, INTENT(INOUT) :: S_P(DIMENSION_3)
+! Phase index
+      DOUBLE PRECISION, INTENT(IN) :: M
 
 ! Local variables
 !---------------------------------------------------------------------//
@@ -281,7 +285,11 @@
 ! time this routine is called, S_C and S_P have already been multiplied
 ! by the fluid cell volume. Thus, the mapping should result in units
 ! of energy per time.
-         S_C(IJK) = S_C(IJK) + DES_ENERGY_SOURCE(IJK)*ODT
+         IF(M == ZERO) THEN
+            S_C(IJK) = S_C(IJK) + DES_ENERGY_SOURCE(IJK)*ODT
+         ELSE
+            S_C(IJK) = S_C(IJK) + DES_ENERGY_SOURCE_S(IJK,M)*ODT
+         END IF
       ENDDO IJK_LP ! End loop over fluid cells
 
       RETURN
@@ -307,7 +315,7 @@
       IMPLICIT NONE
 
       DES_ENERGY_SOURCE(:) = ZERO
-	  DES_ENERGY_SOURCE_S(:,:) = ZERO
+      DES_ENERGY_SOURCE_S(:,:) = ZERO
 
 
       RETURN

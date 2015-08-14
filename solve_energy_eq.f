@@ -54,6 +54,7 @@
       USE ps
       USE mms
       USE functions
+      USE rte_do
 
       IMPLICIT NONE
 !-----------------------------------------------
@@ -86,6 +87,8 @@
       INTEGER :: Err_g(0:numPEs-1)  ! global
       INTEGER :: I_WRITE
 
+      DOUBLE PRECISION :: RAD_SOURCE(DIMENSION_3,N_DO)
+
 
 ! temporary use of global arrays:
 ! arraym1 (locally vxgama)
@@ -105,6 +108,11 @@
 !      DOUBLE PRECISION A_m(DIMENSION_3, -3:3, 0:DIMENSION_M)
 !      DOUBLE PRECISION B_m(DIMENSION_3, 0:DIMENSION_M)
 !-----------------------------------------------
+! calculate radiation sources. This must happen first before matricies are locked
+! RAD_SOURCE is a dummy variable as there are no source terms for the RTE being passed
+      RAD_SOURCE(:,:) = ZERO
+      CALL SOLVE_RTE_DO(RAD_SOURCE, .FALSE.)
+
 
       call lock_ambm         ! locks arrys a_m and b_m
       call lock_tmp_array    ! locks arraym1 (locally vxgama)
@@ -174,7 +182,7 @@
       ENDDO
 
 ! Account for heat transfer between the discrete particles and the gas phase.
-      IF(DES_CONTINUUM_COUPLED) CALL DES_Hgm(S_C, S_P)
+      IF(DES_CONTINUUM_COUPLED) CALL DES_Hgm(S_C, S_P, 0)
 
 ! calculate the convection-diffusion terms
       CALL CONV_DIF_PHI (T_g, K_G, DISCRETIZE(6), U_G, V_G, W_G, &
@@ -222,7 +230,7 @@
 
             IF (FLUID_AT(IJK)) THEN
                APO = ROP_SO(IJK,M)*C_PS(IJK,M)*VOL(IJK)*ODT
-			   S_P(IJK) = APO + S_RPS(IJK,M)*VOL(IJK)
+               S_P(IJK) = APO + S_RPS(IJK,M)*VOL(IJK)
                S_C(IJK) = APO*T_SO(IJK,M) - HOR_S(IJK,M)*VOL(IJK) + &
                   S_RCS(IJK,M)*VOL(IJK)
                VXGAMA(IJK,M) = GAMA_GS(IJK,M)*VOL(IJK)
@@ -237,7 +245,7 @@
             ENDIF
          ENDDO   ! end do (ijk=ijkstart3,ijkend3)
 		 
-         IF(ANY(CALC_RADT_DES(:))) CALL DES_RAD(S_C, M)
+         IF(DES_CONTINUUM_COUPLED) CALL DES_Hgm(S_C, S_P, 0)
 
 ! determine size of terms
          open (unit = 2, file = "energy_eq")

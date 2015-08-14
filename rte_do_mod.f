@@ -6,19 +6,23 @@
       USE PARAM
       IMPLICIT NONE
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: OMEGA, THETA, PHI
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: OMEGA_DO, &
+         THETA_DO,PHI_DO
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: S_I, N_I
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: FLUX_E_DO, &
         FLUX_N_DO, FLUX_T_DO
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: U_DO, V_DO, W_DO
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: I_DO
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: S_CONT_S
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: S_DES, S_CONT_G
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: KAPPA, SIGMA, EMIS
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: KAPPA_S, SIGMA_S
       DOUBLE PRECISION :: KAPPA_G, SIGMA_G
       DOUBLE PRECISION :: D_THETA, D_PHI
       DOUBLE PRECISION :: EMIS_W = 1.0d0
-      INTEGER :: N_THETA = 10
-      INTEGER :: N_PHI = 20
+      DOUBLE PRECISION :: SIGMA_SB
+      INTEGER :: N_THETA = 5
+      INTEGER :: N_PHI = 10
       DOUBLE PRECISION :: DO_TOL = 1.0D-6
       INTEGER :: MAX_DO_ITS = 100
       INTEGER :: N_DO
@@ -31,6 +35,7 @@
       USE COMPAR
       USE PARAM1
       USE GEOMETRY
+      USE RUN
 
       IMPLICIT NONE
 
@@ -38,9 +43,16 @@
 
       N_DO = N_THETA * N_PHI
 
-      ALLOCATE( OMEGA(N_DO))
-      ALLOCATE( THETA(N_DO))
-      ALLOCATE( PHI(N_DO))
+      !Set value of stefan-boltzman constant
+      IF(UNITS == 'SI') THEN
+         SIGMA_SB = 5.6704d0*(10.0d0**(-8)) ! W/((m^2).K^4)
+      ELSE
+         SIGMA_SB = 1.355282d0*(10.0d0**(-12)) ! cal/((cm^2).sec.K^4)
+      ENDIF
+
+      ALLOCATE( OMEGA_DO(N_DO))
+      ALLOCATE( THETA_DO(N_DO))
+      ALLOCATE( PHI_DO(N_DO))
       ALLOCATE( S_I(N_DO,3))
       ALLOCATE( N_I(N_DO,3))
       ALLOCATE( FLUX_E_DO(DIMENSION_3,N_DO))
@@ -55,14 +67,17 @@
       ALLOCATE( EMIS(DIMENSION_3))
       ALLOCATE( KAPPA_S(DIMENSION_M))
       ALLOCATE( SIGMA_S(DIMENSION_M))
+      ALLOCATE( S_CONT_S(DIMENSION_3,DIMENSION_M))
+      ALLOCATE( S_CONT_G(DIMENSION_3))
+      ALLOCATE( S_DES(DIMENSION_3))
 
       KAPPA_S(:) = ZERO
       SIGMA_S(:) = ZERO
       KAPPA_S(1) = 30.0d0
-      KAPPA_G = ZERO
-      SIGMA_G = ZERO
+      KAPPA_G = 10.0d0
+      SIGMA_G = 1.0d0
 
-      I_DO(:,:) = ZERO
+      I_DO(:,:) = ONE
 
       D_THETA = PI/DBLE(N_THETA)
       D_PHI = 2.0d0*PI/DBLE(N_PHI)
@@ -70,18 +85,18 @@
       K = 1
       DO I = 0, N_THETA - 1
          DO J = 0, N_PHI - 1
-           THETA(K) = D_THETA/2.0d0 + DBLE(I)*D_THETA
-           PHI(K) = D_PHI/2.0d0 + DBLE(J)*D_PHI
+           THETA_DO(K) = D_THETA/2.0d0 + DBLE(I)*D_THETA
+           PHI_DO(K) = D_PHI/2.0d0 + DBLE(J)*D_PHI
 
-           S_I(K,1) = SIN(PHI(K))*SIN(0.5d0*D_PHI)*(D_THETA - &
-             COS(2.0d0*THETA(K))*SIN(D_THETA))
-           S_I(K,2) = COS(PHI(K))*SIN(0.5d0*D_PHI)*(D_THETA - &
-             COS(2.0d0*THETA(K))*SIN(D_THETA))
-           S_I(K,3) = 0.5d0*D_PHI*SIN(2.0d0*THETA(K))*SIN(D_THETA)
+           S_I(K,1) = SIN(PHI_DO(K))*SIN(0.5d0*D_PHI)*(D_THETA - &
+             COS(2.0d0*THETA_DO(K))*SIN(D_THETA))
+           S_I(K,2) = COS(PHI_DO(K))*SIN(0.5d0*D_PHI)*(D_THETA - &
+             COS(2.0d0*THETA_DO(K))*SIN(D_THETA))
+           S_I(K,3) = 0.5d0*D_PHI*SIN(2.0d0*THETA_DO(K))*SIN(D_THETA)
 
-           N_I(K,1) = SIN(THETA(K))*SIN(PHI(K))
-           N_I(K,2) = COS(PHI(K))*SIN(THETA(K))
-           N_I(K,3) = COS(THETA(K))
+           N_I(K,1) = SIN(THETA_DO(K))*SIN(PHI_DO(K))
+           N_I(K,2) = COS(PHI_DO(K))*SIN(THETA_DO(K))
+           N_I(K,3) = COS(THETA_DO(K))
 
            
            FLUX_E_DO(:,K) = AYZ(:)*S_I(K,1)
@@ -93,14 +108,14 @@
            V_DO(:,K) = N_I(K,2)
            W_DO(:,K) = N_I(K,3)
 
-           OMEGA(K) = 2.0d0*SIN(THETA(K))*SIN(D_THETA/2.0d0)*D_PHI
+           OMEGA_DO(K) = 2.0d0*SIN(THETA_DO(K))*SIN(D_THETA/2.0d0)*D_PHI
            K = K + 1
         END DO
       END DO
 
       END SUBROUTINE
 
-      SUBROUTINE SOLVE_RTE_DO(S_DES, S_CONT, SOURCE, DEBUG)
+      SUBROUTINE SOLVE_RTE_DO(SOURCE, DEBUG)
       USE PARAM1
       USE AMBM
       USE GEOMETRY
@@ -115,12 +130,11 @@
       USE FUNCTIONS
       USE FUN_AVG
       USE CONSTANT
+      USE FLDVAR
+      USE PHYSPROP, ONLY: SMAX
 
       IMPLICIT NONE
 
-! Outputs: volumetric heat sources for continuum and DEM phases
-      DOUBLE PRECISION, DIMENSION(DIMENSION_3), INTENT(OUT) :: S_DES, & 
-         S_CONT
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO),INTENT(IN) :: SOURCE
       LOGICAL, INTENT(IN) :: DEBUG
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: S_C
@@ -129,7 +143,7 @@
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_CONT
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: Null_Vec, Unity_Vec
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: TMP_I_DO
-      INTEGER :: IJK, ORD, IER
+      INTEGER :: IJK, ORD, IER, M
       DOUBLE PRECISION :: RES1, MAX_RES1, NUM_RES, DEN_RES, SUM_I
       INTEGER :: IJK_RES
       LOGICAL, DIMENSION(N_DO) :: CONVERGED
@@ -140,7 +154,8 @@
       Unity_Vec = ONE
 
       S_DES(:) = ZERO
-      S_CONT(:) = ZERO
+      S_CONT_G(:) = ZERO
+      S_CONT_S(:,:) = ZERO
 
       CONVERGED(:) = .FALSE.
       IF(.NOT.DEBUG) THEN
@@ -155,10 +170,10 @@
 
          DO ORD = 1, N_DO
             DO IJK = IJKSTART3, IJKEND3
-               S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA(ORD)*VOL(IJK)
+               S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA_DO(ORD)*VOL(IJK)
             !Isentropic scattering
-               S_C(IJK) = OMEGA(ORD)*VOL(IJK)*(KAPPA(IJK)*EMIS(IJK) + &
-                  SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA(:))+ &
+               S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(KAPPA(IJK)*EMIS(IJK) + &
+                  SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA_DO(:))+ &
                   SOURCE(IJK,ORD))
             END DO
             TMP_I_DO(:,ORD) = I_DO(:,ORD)
@@ -196,12 +211,17 @@
 
       IF(.NOT. ALL(CONVERGED)) THEN
          PRINT *, 'RTE DO Iterations did not converge!'
+         CALL MFIX_EXIT(myPE)
       END IF
 
       DO IJK = IJKSTART3, IJKEND3
-         SUM_I = SUM(I_DO(IJK,:)*OMEGA(:))
+         IF(.NOT.FLUID_AT(IJK)) CYCLE
+         SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
          S_DES(IJK) = SUM_I*K_DES(IJK)
-         S_CONT(IJK) = SUM_I*K_CONT(IJK)
+         S_CONT_G(IJK) = SUM_I*EP_G(IJK)*KAPPA_G
+         DO M = 1, SMAX
+            S_CONT_S(IJK,M) = SUM_I*EP_S(IJK,M)*KAPPA_S(M)
+         END DO
       END DO
 
       END SUBROUTINE
@@ -222,10 +242,9 @@
       USE FUNCTIONS
       USE FUN_AVG
       USE CONSTANT, ONLY: PI
-      USE DES_THERMO
+      USE PHYSPROP, ONLY: SMAX
 
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: I_SOL, SOURCE
-      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: S_DES, S_CONT
       DOUBLE PRECISION :: X, Y, Z
       DOUBLE PRECISION :: TEMP = 463.0d0
       INTEGER :: I, J, K, IJK, ORD
@@ -237,7 +256,7 @@
       !Set up parameters
       I_DO(:,:) = ONE
       KAPPA(:) = ONE
-      EMIS(:) = SB_CONST*TEMP**4/PI
+      EMIS(:) = SIGMA_SB*TEMP**4/PI
       SIGMA(:) = ZERO
       
 
@@ -274,7 +293,7 @@
                   !set up the solution, this needs to be done first in
                   !case the solution is angle dependent
                   I_SOL(IJK,ORD)=(X**3+3*Y**2+Z**2) * &
-                     (COS(THETA(ORD))**2 + 1.0d0)
+                     (COS(THETA_DO(ORD))**2 + 1.0d0)
                END DO
 
                !define integral of the solution over all solid angles
@@ -284,14 +303,14 @@
                   !set up the source term
                   !define gradient
                   GRAD_I(1) = (3.0d0*X**2) * &
-                     (COS(THETA(ORD))**2 + 1.0d0)
+                     (COS(THETA_DO(ORD))**2 + 1.0d0)
                   GRAD_I(2) = (6.0d0*Y) * &
-                     (COS(THETA(ORD))**2 + 1.0d0)
+                     (COS(THETA_DO(ORD))**2 + 1.0d0)
                   GRAD_I(3) = (2.0d0*Z) * &
-                     (COS(THETA(ORD))**2 + 1.0d0)
+                     (COS(THETA_DO(ORD))**2 + 1.0d0)
 
                   SOURCE(IJK,ORD) = (KAPPA(IJK)+SIGMA(IJK)) * &
-                  I_SOL(IJK,ORD)-KAPPA(IJK)*SB_CONST*TEMP**4/PI - &
+                  I_SOL(IJK,ORD)-KAPPA(IJK)*SIGMA_SB*TEMP**4/PI - &
                   SIGMA(IJK)/4.0d0/PI*INT_I(IJK) + &
                   DOT_PRODUCT(GRAD_I,N_I(ORD,:))
                END DO
@@ -303,12 +322,12 @@
          END DO
       END DO
       !Solve
-      CALL SOLVE_RTE_DO(S_DES, S_CONT, SOURCE, .TRUE.)
+      CALL SOLVE_RTE_DO(SOURCE, .TRUE.)
 
       !Calculate and print residuals
       DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
-         SUM_I = SUM(I_DO(IJK,:)*OMEGA(:))
+         SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
          NUM_RES_TOT = NUM_RES_TOT + (SUM_I-INT_I(IJK))**2
          DEN_RES_TOT = DEN_RES_TOT + (INT_I(IJK))**2
          DO ORD = 1, N_DO
@@ -319,7 +338,7 @@
 
       DO ORD = 1, N_DO
          PRINT *,'Residual for ordinate', &
-           ORD,THETA(ORD),PHI(ORD),SQRT(NUM_RES(ORD)/DEN_RES(ORD))
+           ORD,THETA_DO(ORD),PHI_DO(ORD),SQRT(NUM_RES(ORD)/DEN_RES(ORD))
       END DO
 
       PRINT *,'Total residual',SQRT(NUM_RES_TOT/DEN_RES_TOT)
@@ -357,7 +376,7 @@
       Unity_Vec = ONE
 
       !Check that solid angles sum to 4*PI
-      IF(ABS(SUM(OMEGA(:))-4.0d0*PI) > 0.0001d0) PRINT *, &
+      IF(ABS(SUM(OMEGA_DO(:))-4.0d0*PI) > 0.0001d0) PRINT *, &
          'Sum of solid angles does not sum to 4*PI'
 
       !For debugging
@@ -383,12 +402,20 @@
       IF(ANY((EMIS(:) <= 0.0d0).AND.(FLAG(:).EQ.1))) &
          PRINT *,'Zero or negative emissivity'
 
+      OPEN (unit = 2, file = "rad_prop")
+      DO I_WRITE = 1, DIMENSION_3
+         WRITE (2,*) I_WRITE, FLUID_AT(I_WRITE), KAPPA(I_WRITE), &
+         K_DES(I_WRITE), K_CONT(I_WRITE), EMIS(I_WRITE), &
+         SIGMA(I_WRITE)
+      END DO
+      CLOSE(2)
+
       DO ORD = 1, N_DO
          DO IJK = IJKSTART3, IJKEND3
-            S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA(ORD)*VOL(IJK)
+            S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA_DO(ORD)*VOL(IJK)
             !Isentropic scattering
-            S_C(IJK) = OMEGA(ORD)*VOL(IJK)*(EMIS(IJK) + &
-               SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA(:)))
+            S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(EMIS(IJK) + &
+               SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA_DO(:)))
          END DO
          TMP_I_DO(:,ORD) = I_DO(:,ORD)
          CALL LOCK_AMBM
@@ -421,12 +448,13 @@
 
       END DO
 
+      CALL MFIX_EXIT(myPE)
+
       END SUBROUTINE
 
       SUBROUTINE CALC_RAD_PROP(K_DES,K_CONT,EMIS,SIGMA)
 
       USE CONSTANT
-      USE DES_THERMO
       USE DISCRETELEMENT
       USE FLDVAR
       USE GEOMETRY
@@ -436,6 +464,7 @@
       USE RUN
       USE COMPAR
       USE FUNCTIONS
+      USE DES_THERMO
       USE PHYSPROP, ONLY: SMAX
       
       IMPLICIT NONE
@@ -456,7 +485,7 @@
 ! ijk indices      
       INTEGER IJK, I, J, K
 ! 1 over volume of fluid cell      
-      DOUBLE PRECISION :: OVOL
+      DOUBLE PRECISION :: OVOL, OPVOL
 ! percent of particle in a cell and projected area of particle
       DOUBLE PRECISION :: P_IN_CELL, A_P
 !----------------------------------------------
@@ -473,25 +502,26 @@
          IF(DISCRETE_ELEMENT) THEN
             DO L = 1, MAX_PIP
                IF(.NOT.PEA(L,1)) CYCLE
+               IF(PART_VOL_INTERSEC(IJK,L) == ZERO) CYCLE
                P_IN_CELL = PART_VOL_INTERSEC(IJK,L)/PVOL(L)
                M = PIJK(L,5) + SMAX
                A_P = PI*DES_RADIUS(L)**2
                K_DES(IJK) = K_DES(IJK) + DES_EM(M)*A_P*OVOL*P_IN_CELL
-               EMIS(IJK) = EMIS(IJK) + DES_EM(M)*A_P*&
-                  SB_CONST*DES_T_S_NEW(L)**4/PI*OVOL*P_IN_CELL
+               EMIS(IJK) = EMIS(IJK) + DES_EM(M)*A_P* &
+                  SIGMA_SB*DES_T_S_NEW(L)**4/PI*OVOL*P_IN_CELL
                SIGMA(IJK) = SIGMA(IJK)+(ONE-DES_EM(M))*A_P*  &
                   OVOL*P_IN_CELL
             END DO
          END IF
 
          K_CONT(IJK) = K_CONT(IJK) + KAPPA_G*EP_G(IJK)
-         EMIS(IJK) = EMIS(IJK) + KAPPA_G*SB_CONST*  &
+         EMIS(IJK) = EMIS(IJK) + KAPPA_G*SIGMA_SB*  &
             T_G(IJK)**4/PI*EP_G(IJK) 
          SIGMA(IJK) = SIGMA(IJK) + SIGMA_G*EP_G(IJK)
 
          DO M = 1, SMAX
             K_CONT(IJK) = K_CONT(IJK) + KAPPA_S(M)*EP_S(IJK,M)
-            EMIS(IJK) = EMIS(IJK) + KAPPA_S(M)*SB_CONST*  &
+            EMIS(IJK) = EMIS(IJK) + KAPPA_S(M)*SIGMA_SB*  &
                T_S(IJK,M)**4/PI*EP_S(IJK,M)
             SIGMA(IJK) = SIGMA(IJK) + SIGMA_S(M)*EP_S(IJK,M)
          END DO
@@ -510,7 +540,6 @@
       USE FUNCTIONS
       USE FLDVAR
       USE CONSTANT
-      USE DES_THERMO
 
       IMPLICIT NONE
 
@@ -539,7 +568,7 @@
                DO ORD = 1, N_DO
                   IF(-N_I(ORD,3)>ZERO) SUM=SUM-I_DO(IJK_F,ORD)*S_I(ORD,3)
                ENDDO
-               I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+               I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
                
             ENDDO
          ENDDO
@@ -561,7 +590,7 @@
                DO ORD = 1, N_DO
                   IF(N_I(ORD,3)>ZERO) SUM=SUM+I_DO(IJK_F,ORD)*S_I(ORD,3)
                ENDDO
-               I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+               I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
             ENDDO
          ENDDO
       ENDIF
@@ -583,7 +612,7 @@
             DO ORD = 1, N_DO
                IF(-N_I(ORD,2)>ZERO) SUM=SUM-I_DO(IJK_F,ORD)*S_I(ORD,2)
             ENDDO
-            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
          ENDDO
       ENDDO
 
@@ -604,7 +633,7 @@
             DO ORD = 1, N_DO
                IF(N_I(ORD,2)>ZERO) SUM=SUM+I_DO(IJK_F,ORD)*S_I(ORD,2)
             ENDDO
-            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
          ENDDO
       ENDDO
 
@@ -625,7 +654,7 @@
             DO ORD = 1, N_DO
                IF(-N_I(ORD,1)>ZERO) SUM=SUM-I_DO(IJK_F,ORD)*S_I(ORD,1)
             ENDDO
-            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
          ENDDO
       ENDDO
 
@@ -646,7 +675,7 @@
             DO ORD = 1, N_DO
                IF(N_I(ORD,1)>ZERO) SUM=SUM+I_DO(IJK_F,ORD)*S_I(ORD,1)
             ENDDO
-            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SB_CONST*Tw**4/PI
+            I_DO(IJK,:) = (ONE-EMIS_W)/PI*SUM+EMIS_W*SIGMA_SB*Tw**4/PI
          ENDDO
       ENDDO    
 

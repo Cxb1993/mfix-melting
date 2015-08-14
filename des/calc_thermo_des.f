@@ -26,6 +26,7 @@
       USE interpolation
       USE param1
       USE run
+      USE rte_do
 
       IMPLICIT NONE
 
@@ -55,31 +56,11 @@
 ! this routine should be split apart to avoid the particle loops for
 ! cold-flow, non-reacting cases.
       IF(.NOT.ENERGY_EQ .AND. .NOT.ANY_SPECIES_EQ) RETURN
-
-      IF(ANY(CALC_RADT_DES(:))) THEN 
-         S_RC_DES(:) = ZERO
-		 S_RC_CONT(:) = ZERO
-         CALL CALC_RAD_HEAT_SRC_DES(S_RC_DES,S_RC_CONT)
-      END IF	  
 	  
 ! Loop over fluid cells.
 !---------------------------------------------------------------------//
       IJK_LP: DO IJK = IJKSTART3, IJKEND3	  
          IF(.NOT.FLUID_AT(IJK)) CYCLE IJK_LP
-		 
-		 IF(ANY(CALC_RADT_DES(:))) THEN
-			ALPHA_TOT = 0.0d0
-			DO M = 1, SMAX
-				ALPHA_TOT = ALPHA_TOT + ALPHA_S(M)*EP_S(IJK,M)
-			END DO
-			DO M = 1, SMAX
-				IF(EP_S(IJK,M) > 0.0d0) THEN 
-					DES_ENERGY_SOURCE_S(IJK,M) = DES_ENERGY_SOURCE_S(IJK,M) + &
-						S_RC_CONT(IJK)*VOL(IJK)*ALPHA_S(M)*EP_S(IJK,M) / &
-						ALPHA_TOT*DTSOLID
-				END IF
-			END DO
-		 END IF
 		 
          IF(PINC(IJK) == 0) CYCLE IJK_LP
 

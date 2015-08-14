@@ -1,0 +1,305 @@
+########################################################################
+#  Author: J.Musser                                 Date:   2012-11-15 #
+#                                                                      #
+#  Purpose: These simulations are constructed to reflect the classical #
+#  wet-bulb phenomenon whereby energy loss from evaporation is offset  #
+#  by energy absorption from the environment.                          #
+#                                                                      #
+#  Setup: A single droplet is suspended in a humidified air stream     #
+#  with an initial temperature equal to the air temperature (30C).     #
+#  Fifteen seconds of physical time is simulated to ensure the droplet #
+#  achieves a steady-state (SS) temperature. The SS temperature should #
+#  compare with the theoretical wet-bulb temperature.                  #
+#                                                                      #
+#  Boundary and initial conditions are provided for 11 cases. The      #
+#  relative humidity of the air ranges from 0% to 100% in increments   #
+#  of 10%.                                                             #
+#                                                                      #
+#  Note:                                                               #
+#  > Steady-state and theoretical wet-bulb temperatures are provided   #
+#    in the following table for comparison.                            #
+#  > The default test cases is for 50% relative humidity.              #
+#                                                                      #
+#  |----------------------------------------------------------------|  #
+#  | Relative | Mass fractions (Xg) | Mass Flow | Wet-Bulb | DEM-SS |  #
+#  | Humidity |---------------------|    Rate   |   Temp   |  Temp  |  #
+#  | (Tg=30C) |    Air   |    H2O   |  (g/sec)  |    (C)   |   (C)  |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |    0%    | 1.000000 | 0.000000 |  0.349315 |   10.5   |   9.49 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   10%    | 0.997390 | 0.002610 |  0.348762 |   13.2   |  12.43 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   20%    | 0.994771 | 0.005229 |  0.348208 |   15.7   |  15.10 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   30%    | 0.992144 | 0.007856 |  0.347655 |   18.0   |  17.51 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   40%    | 0.989509 | 0.010491 |  0.347102 |   20.1   |  19.72 |  #
+#  ******************************************************************  #
+#  *   50%    * 0.986865 * 0.013135 *  0.346548 *   22.0   *  21.76 *  #
+#  ******************************************************************  #
+#  |   60%    | 0.984212 | 0.015788 |  0.345995 |   23.8   |  23.64 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   70%    | 0.981552 | 0.018448 |  0.345442 |   25.5   |  25.39 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   80%    | 0.978882 | 0.021118 |  0.344888 |   27.1   |  27.02 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |   90%    | 0.976204 | 0.023796 |  0.344335 |   28.6   |  28.56 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#  |  100%    | 0.973518 | 0.026482 |  0.343781 |   30.0   |  30.00 |  #
+#  |----------|----------|----------|-----------|----------|--------|  #
+#                                                                      #
+#  References:                                                         #
+#  A.F. Mills. 1999. Basic Heat and Mass Transfer. Prentice Hall, USA. #
+#                                                                      #
+########################################################################
+
+  RUN_NAME  = 'WBT'
+  DESCRIPTION  = 'DEM TEST: Wet-bulb Test - 50% relative humidity'
+
+#_______________________________________________________________________
+# RUN CONTROL SECTION
+
+  RUN_TYPE = 'NEW'
+  UNITS = 'CGS'
+
+  TIME =   0.0
+  TSTOP =  0.007
+
+  DT =     1.0E-6
+  DT_MAX = 1.0E-5
+  DT_FAC = 0.9
+  DETECT_STALL = .TRUE.
+  TOL_DIVERGE = 1.0E10
+
+  ENERGY_EQ  = .T.
+  SPECIES_EQ(0:2) = .T.  .T.  .T.
+
+  MOMENTUM_X_EQ(0:2)  = .T.   .T.  .T.
+  MOMENTUM_Y_EQ(0:2)  = .T.   .T.  .T.
+  MOMENTUM_Z_EQ(0:2)  = .T.   .T.  .T.
+
+  CALL_USR = .T.
+
+  DES_CONTINUUM_COUPLED = .T.
+  DES_INTERP_ON  = .F.
+!  DES_ONEWAY_COUPLED = .T.
+
+#_______________________________________________________________________
+# NUMERICAL SECTION
+
+!  NORM_g = 0.0
+!  LEQ_METHOD(1:7) = 3 3 3 3 3 3 3
+  LEQ_IT(1:7) = 40 40 40 40 40 40 40
+  LEQ_TOL(1:7) = 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6
+
+#_______________________________________________________________________
+# GEOMETRY SECTION 
+
+  COORDINATES = 'CARTESIAN'
+
+  XLENGTH  = 1.0   IMAX = 20
+  ZLENGTH  = 1.0   KMAX = 20
+  YLENGTH  = 1.0   JMAX = 20
+
+#_______________________________________________________________________
+# MATERIAL SECTION
+
+! GAS SECTION
+!---------------------------------------------------------------------//
+  NMAX_g = 1
+  SPECIES_g(1) = 'AIR'   SPECIES_ALIAS_g(1) = 'AIR'
+!  DRAG_TYPE = 'USER_DRAG'
+
+!  MW_g  - Obtained from Burcat and Ruscic databse
+!  MW_AVG - Calculated from individual species
+
+
+
+! PARTICLE SECTION
+!---------------------------------------------------------------------//
+  MMAX = 2
+
+  PARTICLES  = 8   ! Number of partiles in the system.
+
+! Particle-particle:
+  KN =   1.0d6               ! Normal collision spring constant
+  DES_EN_INPUT = 0.9         ! Restitution coefficient
+  MEW   = 0.1                ! Friction coefficient
+
+! Particle-wall:
+  KN_W = 1.0d6               ! Normal collision spring constant
+  DES_EN_WALL_INPUT = 0.9    ! Restitution coefficient
+  MEW_W = 0.1                ! Friction coefficient
+
+!  NFACTOR = 0                ! No initial settling
+
+  DES_NEIGHBOR_SEARCH = 4    ! Grid based neighbor search
+!  NEIGHBOR_SEARCH_N   = 9999 ! Steps between neighbor search
+
+! Solids phase 1
+!---------------------------------------------------------------------//
+  SOLIDS_MODEL(1) = 'TFM'
+
+  D_p0(1) = 0.058      ! (cm)
+  RO_s0(1)= 0.93d0 ! (g/cm)
+  K_s0(1) = 5.497d-4
+
+  CLOSE_PACKED(1) = .F.
+  FRICTION = .F.
+  SCHAEFFER = .F.
+
+  EP_STAR = 0.5
+  C_E = 0.9
+  C_F = 0.1
+
+  NMAX_s(1) = 1
+
+  MW_S(1,1) = 197.32
+  SPECIES_s(1,1) = 'NYLON12_L'   
+  SPECIES_ALIAS_s(1,1) = 'Liquid'
+
+! Solids phase 2
+!---------------------------------------------------------------------//
+  SOLIDS_MODEL(2) = 'DEM'
+
+  D_p0(2) = 0.1      ! (cm)
+  RO_s0(2)= 0.93d0 ! (g/cm3)
+  K_s0(2) = 5.497d-4
+
+  DES_Em(2) = 0.9d0
+
+  NMAX_s(2) = 1
+
+  MW_S(2,1) = 197.32
+  SPECIES_s(2,1) = 'NYLON12_S'
+  SPECIES_ALIAS_s(2,1) = 'Solid'
+
+#_______________________________________________________________________
+# INITIAL CONDITIONS SECTION
+
+  IC_X_w(1) = 0.0
+  IC_X_e(1) = 1.0
+
+  IC_Y_s(1) = 0.0
+  IC_Y_n(1) = 1.0
+
+  IC_Z_b(1) = 0.0
+  IC_Z_t(1) = 1.0
+
+  IC_EP_g(1) = 1.0
+  IC_EP_s(1,1) = 0.0
+  IC_P_g(1)  = 1.01325d6  ! -> 1atm
+  IC_T_g(1) = 463.0
+  IC_T_s(1,1) = 463.0
+!  IC_T_s(1,2) = 463.0
+
+  IC_U_g(1) =   0.0       ! (cm/sec)
+  IC_V_g(1) =   0.0       ! (cm/sec)
+  IC_W_g(1) =   0.0       ! (cm/sec)
+
+  IC_X_g(1,1) = 1.0
+  IC_X_s(1,1,1) = 1.0
+!  IC_X_s(1,2,1) = 1.0
+
+
+#_______________________________________________________________________
+# BOUNDARY CONDITIONS SECTION
+
+# no-slip Walls
+#---------------------------------------------------------------------//
+  BC_X_w(1)  =  0.0   0.0   0.0   0.0   0.0   1.0
+  BC_X_e(1)  =  1.0   1.0   1.0   1.0   0.0   1.0
+  BC_Z_b(1)  =  0.0   1.0   0.0   0.0   0.0   0.0
+  BC_Z_t(1)  =  0.0   1.0   1.0   1.0   1.0   1.0
+  BC_Y_s(1)  =  0.0   0.0   0.0   1.0   0.0   0.0
+  BC_Y_n(1)  =  1.0   1.0   0.0   1.0   1.0   1.0
+
+  BC_TYPE(1) = 6*'NSW'
+  BC_Hw_T_g(1) = 0.0 0.0 0.0 0.0 0.0 0.0
+  BC_C_T_g(1) = 0.0 0.0 0.0 0.0 0.0 0.0
+  BC_Xw_g(1,1) = 1.0
+  BC_Xw_g(2,1) = 1.0
+  BC_Xw_g(3,1) = 1.0
+  BC_Xw_g(4,1) = 1.0
+  BC_Xw_g(5,1) = 1.0
+  BC_Xw_g(6,1) = 1.0
+
+  BC_Hw_T_s(1,1) = 0.0
+  BC_Hw_T_s(2,1) = 0.0
+  BC_Hw_T_s(3,1) = 0.0
+  BC_Hw_T_s(4,1) = 0.0
+  BC_Hw_T_s(5,1) = 0.0
+  BC_Hw_T_s(6,1) = 0.0
+  
+  BC_C_T_s(1,1) = 0.0
+  BC_C_T_s(2,1) = 0.0
+  BC_C_T_s(3,1) = 0.0
+  BC_C_T_s(4,1) = 0.0
+  BC_C_T_s(5,1) = 0.0
+  BC_C_T_s(6,1) = 0.0
+
+  BC_Xw_s(1,1,1) = 1.0
+  BC_Xw_s(2,1,1) = 1.0
+  BC_Xw_s(3,1,1) = 1.0
+  BC_Xw_s(4,1,1) = 1.0
+  BC_Xw_s(5,1,1) = 1.0
+  BC_Xw_s(6,1,1) = 1.0
+
+#_______________________________________________________________________
+# CHEMICAL REACTION SECTION
+
+  @(DES_RXNS)
+
+    Melting{ chem_eq = "Solid --> Liquid"}
+
+  @(DES_END)
+
+
+
+#_______________________________________________________________________
+# OUTPUT CONTROL SECTION
+
+  RES_DT = 0.001 
+  DES_RES_DT = 0.001
+  PRINT_DES_DATA = .T.
+  DES_OUTPUT_TYPE = 'PARAVIEW'
+
+  SPX_DT(1) = 0.001    ! EP_g 
+  SPX_DT(2) = 0.001    ! P_g, P_star 
+  SPX_DT(3) = 0.001    ! U_g, V_g, W_g
+  SPX_DT(4) = 0.001   ! U_s, V_s, W_s
+  SPX_DT(5) = 0.001    ! ROP_s
+  SPX_DT(6) = 0.001    ! T_g, T_s
+  SPX_DT(7) = 0.001    ! X_g, X_s
+  SPX_DT(8) = 500.   ! theta
+  SPX_DT(9) = 500.   ! Scalar
+
+  RESID_STRING  = 'P0' 'T0'
+
+  NLOG = 25
+  FULL_LOG = .T. 
+
+#_______________________________________________________________________
+# PARALLELIZATION CONTROLS
+
+  NODESI  = 1     NODESJ  = 1     NODESK  = 1
+
+
+#_______________________________________________________________________
+THERMO DATA
+
+H2O(L)            L 8/89H  2.O  1.   0.   0.L   273.150  6000.000  C  18.01528 1
+ 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00    2
+ 0.00000000E+00 0.00000000E+00 7.25575005E+01-6.62445402E-01 2.56198746E-03    3
+-4.36591923E-06 2.78178981E-09-4.18865499E+04-2.88280137E+02-3.43772513E+04    4
+
+NYLON12_S         g 8/99C  1.H  4.   0.   0.G   230.000  6000.000  B  197.32   1
+ 2.70629000E+00 1.28370000E-01 0.00000000E+00 0.00000000E+00 0.00000000E+00    2
+ 0.00000000E+00 0.00000000E+00 2.70629000E+00 1.28370000E-01 0.00000000E+00    3
+ 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00    4
+
+NYLON12_L         g 8/99C  1.H  4.   0.   0.G   230.000  6000.000  B  197.32   1
+ 2.70629000E+00 1.28370000E-01 0.00000000E+00 0.00000000E+00 0.00000000E+00    2
+ 0.00000000E+00 0.00000000E+00 2.70629000E+00 1.28370000E-01 0.00000000E+00    3
+ 0.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00 5.03400000E+03    4
+
