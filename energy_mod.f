@@ -39,21 +39,22 @@ CONTAINS
   DOUBLE PRECISION FUNCTION S_Rpg(IJK)
     IMPLICIT NONE
     INTEGER IJK
-    S_Rpg = 16.0d0 * KAPPA_G * SIGMA_SB * T_g(IJK)**3
+    S_Rpg = 16.0d0 * EP_G(IJK) * KAPPA_G * SIGMA_SB * T_g(IJK)**3
   END FUNCTION S_Rpg
 
   !  S_c for gas phase at i, j, k
   DOUBLE PRECISION FUNCTION S_Rcg(IJK)
     IMPLICIT NONE
     INTEGER IJK
-    S_Rcg = S_CONT_G(IJK) + 12.0d0 * KAPPA_G * SIGMA_SB * T_g(IJK)**4
+    S_Rcg = S_CONT_G(IJK) &
+      + 12.0d0 * EP_G(IJK) * KAPPA_G * SIGMA_SB * T_g(IJK)**4
   END FUNCTION S_Rcg
 
   !  S_p for solids phase at i, j, k
   DOUBLE PRECISION FUNCTION S_Rps(IJK, M)
     IMPLICIT NONE
     INTEGER IJK, M
-    S_Rps = 16.0d0 * KAPPA_S(M) * SIGMA_SB * T_s(IJK,M)**3
+    S_Rps = 16.0d0 * EP_S(IJK,M) * KAPPA_S(M) * SIGMA_SB * T_s(IJK,M)**3
   END FUNCTION S_Rps
 
   !  S_c for solids phase at i, j, k
@@ -61,7 +62,7 @@ CONTAINS
     IMPLICIT NONE
     INTEGER IJK, M
     S_Rcs = S_CONT_S(IJK,M) & 
-      + 12.0d0 * KAPPA_S(M) * SIGMA_SB * T_s(IJK,M)**4
+      + 12.0d0 * EP_S(IJK,M) * KAPPA_S(M) * SIGMA_SB * T_s(IJK,M)**4
   END FUNCTION S_Rcs
 
 END MODULE energy

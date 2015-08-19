@@ -63,10 +63,14 @@
   UNITS = 'CGS'
 
   TIME =   0.0
-  TSTOP =  1.0
+  TSTOP =  0.000128
 
-  DT =     1.0E-5
-  DT_FAC = 0.9
+  DT =     1.0E-8
+  DT_MAX = 1.0E-5
+  DT_MIN = 1.0E-8
+  DT_FAC = 1.0
+  DETECT_STALL = .TRUE.
+  TOL_DIVERGE = 1.0E10
 
   ENERGY_EQ  = .T.
   SPECIES_EQ(0:2) = .T.  .T.  .T.
@@ -79,20 +83,24 @@
 
   DES_CONTINUUM_COUPLED = .T.
   DES_INTERP_ON  = .F.
+!  DES_ONEWAY_COUPLED = .T.
 
 #_______________________________________________________________________
 # NUMERICAL SECTION
 
-  NORM_g = 0.0
+!  NORM_g = 0.0
+!  LEQ_METHOD(1:7) = 3 3 3 3 3 3 3
+  LEQ_IT(1:7) = 40 40 40 40 40 40 40
+  LEQ_TOL(1:7) = 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6 1.0E-6
 
 #_______________________________________________________________________
 # GEOMETRY SECTION 
 
   COORDINATES = 'CARTESIAN'
 
-  XLENGTH  = 2.0   IMAX = 2
-  ZLENGTH  = 2.0   KMAX = 2
-  YLENGTH  = 2.0   JMAX = 2
+  XLENGTH  = 0.05   IMAX = 10
+  ZLENGTH  = 0.05   KMAX = 10
+  YLENGTH  = 0.05   JMAX = 10
 
 #_______________________________________________________________________
 # MATERIAL SECTION
@@ -101,6 +109,7 @@
 !---------------------------------------------------------------------//
   NMAX_g = 1
   SPECIES_g(1) = 'AIR'   SPECIES_ALIAS_g(1) = 'AIR'
+!  DRAG_TYPE = 'USER_DRAG'
 
 !  MW_g  - Obtained from Burcat and Ruscic databse
 !  MW_AVG - Calculated from individual species
@@ -111,7 +120,7 @@
 !---------------------------------------------------------------------//
   MMAX = 2
 
-  PARTICLES  = 4   ! Number of partiles in the system.
+  PARTICLES  = 687   ! Number of partiles in the system.
 
 ! Particle-particle:
   KN =   1.0d6               ! Normal collision spring constant
@@ -132,7 +141,7 @@
 !---------------------------------------------------------------------//
   SOLIDS_MODEL(1) = 'TFM'
 
-  D_p0(1) = 0.1      ! (cm)
+  D_p0(1) = 0.058      ! (cm)
   RO_s0(1)= 0.93d0 ! (g/cm)
   K_s0(1) = 5.497d-4
 
@@ -154,7 +163,7 @@
 !---------------------------------------------------------------------//
   SOLIDS_MODEL(2) = 'DEM'
 
-  D_p0(2) = 1.0      ! (cm)
+  D_p0(2) = 0.0058      ! (cm)
   RO_s0(2)= 0.93d0 ! (g/cm3)
   K_s0(2) = 5.497d-4
 
@@ -170,20 +179,20 @@
 # INITIAL CONDITIONS SECTION
 
   IC_X_w(1) = 0.0
-  IC_X_e(1) = 2.0
+  IC_X_e(1) = 0.05
 
   IC_Y_s(1) = 0.0
-  IC_Y_n(1) = 2.0
+  IC_Y_n(1) = 0.05
 
   IC_Z_b(1) = 0.0
-  IC_Z_t(1) = 2.0
+  IC_Z_t(1) = 0.05
 
   IC_EP_g(1) = 1.0
   IC_EP_s(1,1) = 0.0
   IC_P_g(1)  = 1.01325d6  ! -> 1atm
-  IC_T_g(1) = 463.0
+  IC_T_g(1) = 300.0
   IC_T_s(1,1) = 300.0
-  IC_T_s(1,2) = 463.0
+  IC_T_s(1,2) = 300.0
 
   IC_U_g(1) =   0.0       ! (cm/sec)
   IC_V_g(1) =   0.0       ! (cm/sec)
@@ -199,12 +208,12 @@
 
 # no-slip Walls
 #---------------------------------------------------------------------//
-  BC_X_w(1)  =  0.0   0.0   0.0   0.0   0.0   2.0
-  BC_X_e(1)  =  2.0   2.0   2.0   2.0   0.0   2.0
-  BC_Z_b(1)  =  0.0   2.0   0.0   0.0   0.0   0.0
-  BC_Z_t(1)  =  0.0   2.0   2.0   2.0   2.0   2.0
-  BC_Y_s(1)  =  0.0   0.0   0.0   2.0   0.0   0.0
-  BC_Y_n(1)  =  2.0   2.0   0.0   2.0   2.0   2.0
+  BC_X_w(1)  =  0.0   0.0   0.0   0.0   0.0   0.05
+  BC_X_e(1)  =  0.05  0.05  0.05  0.05  0.0   0.05
+  BC_Z_b(1)  =  0.0   0.05  0.0   0.0   0.0   0.0
+  BC_Z_t(1)  =  0.0   0.05  0.05  0.05  0.05  0.05
+  BC_Y_s(1)  =  0.0   0.0   0.0   0.05  0.0   0.0
+  BC_Y_n(1)  =  0.05  0.05  0.0   0.05  0.05  0.05
 
   BC_TYPE(1) = 6*'NSW'
   BC_Hw_T_g(1) = 0.0 0.0 0.0 0.0 0.0 0.0
@@ -219,7 +228,7 @@
   BC_Hw_T_s(1,1) = 0.0
   BC_Hw_T_s(2,1) = 0.0
   BC_Hw_T_s(3,1) = 0.0
-  BC_Hw_T_s(4,1) = 0.0
+  BC_Hw_T_S(4,1) = 0.0
   BC_Hw_T_s(5,1) = 0.0
   BC_Hw_T_s(6,1) = 0.0
   
@@ -251,18 +260,18 @@
 #_______________________________________________________________________
 # OUTPUT CONTROL SECTION
 
-  RES_DT = 0.01 
-  DES_RES_DT = 0.01
+  RES_DT = 1E-6
+  DES_RES_DT = 1E-6
   PRINT_DES_DATA = .T.
   DES_OUTPUT_TYPE = 'PARAVIEW'
 
-  SPX_DT(1) = 0.01    ! EP_g 
-  SPX_DT(2) = 5.0    ! P_g, P_star 
-  SPX_DT(3) = 0.01    ! U_g, V_g, W_g
-  SPX_DT(4) = 500.   ! U_s, V_s, W_s
-  SPX_DT(5) = 0.01    ! ROP_s
-  SPX_DT(6) = 0.01    ! T_g, T_s
-  SPX_DT(7) = 0.01    ! X_g, X_s
+  SPX_DT(1) = 1E-6    ! EP_g 
+  SPX_DT(2) = 1E-6    ! P_g, P_star 
+  SPX_DT(3) = 1E-6    ! U_g, V_g, W_g
+  SPX_DT(4) = 1E-6   ! U_s, V_s, W_s
+  SPX_DT(5) = 1E-6    ! ROP_s
+  SPX_DT(6) = 1E-6    ! T_g, T_s
+  SPX_DT(7) = 1E-6    ! X_g, X_s
   SPX_DT(8) = 500.   ! theta
   SPX_DT(9) = 500.   ! Scalar
 

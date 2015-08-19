@@ -113,6 +113,7 @@
       RAD_SOURCE(:,:) = ZERO
       CALL SOLVE_RTE_DO(RAD_SOURCE, .FALSE.)
 
+      !CALL PRINT_I_DO_FIELD
 
       call lock_ambm         ! locks arrys a_m and b_m
       call lock_tmp_array    ! locks arraym1 (locally vxgama)
@@ -124,21 +125,21 @@
       TMP_SMAX = SMAX
       IF(DISCRETE_ELEMENT) THEN
          IF(TMP_SMAX > 1) TMP_SMAX = 1
-		 !TMP_SMAX = 0   ! Only the gas calculations are needed
+!TMP_SMAX = 0   ! Only the gas calculations are needed
       ENDIF
 
 ! initializing
       DO M = 0, TMP_SMAX
          CALL INIT_AB_M (A_M, B_M, IJKMAX2, M, IER)
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
       ENDDO
 
       DO IJK = IJKSTART3, IJKEND3
@@ -230,11 +231,16 @@
 
             IF (FLUID_AT(IJK)) THEN
                APO = ROP_SO(IJK,M)*C_PS(IJK,M)*VOL(IJK)*ODT
+               IF(APO.EQ.ZERO) APO=ROP_S(IJK,M)*C_PS(IJK,M)*VOL(IJK)*ODT
+               EPS(IJK) = ONE
+               IF(APO.EQ.ZERO) EPS(IJK) = ZERO
                S_P(IJK) = APO + S_RPS(IJK,M)*VOL(IJK)
+!               S_P(IJK) = ROP_S(IJK,M)*C_PS(IJK,M)*VOL(IJK)*ODT + &
+!                  S_RPS(IJK,M)*VOL(IJK)
                S_C(IJK) = APO*T_SO(IJK,M) - HOR_S(IJK,M)*VOL(IJK) + &
                   S_RCS(IJK,M)*VOL(IJK)
                VXGAMA(IJK,M) = GAMA_GS(IJK,M)*VOL(IJK)
-               EPS(IJK) = EP_S(IJK,M)
+!               EPS(IJK) = EP_S(IJK,M)
                IF(USE_MMS) S_C(IJK) = S_C(IJK) + MMS_T_S_SRC(IJK)*VOL(IJK)
             ELSE
                S_P(IJK) = ZERO
@@ -248,13 +254,13 @@
          IF(DES_CONTINUUM_COUPLED) CALL DES_Hgm(S_C, S_P, 0)
 
 ! determine size of terms
-         open (unit = 2, file = "energy_eq")
-         DO IJK = ijkstart3, ijkend3
-            IF(FLUID_AT(IJK)) THEN
-               WRITE (2,*) IJK,HOR_S(IJK,1)*VOL(IJK),S_RCS(IJK,1)*VOL(IJK),VXGAMA(IJK,1),S_C(IJK)
-            END IF
-         END DO
-         CLOSE(2)
+         !open (unit = 2, file = "energy_eq")
+         !DO IJK = ijkstart3, ijkend3
+         !   IF(FLUID_AT(IJK)) THEN
+         !      WRITE (2,*) IJK,HOR_S(IJK,1)*VOL(IJK),S_RCS(IJK,1)*VOL(IJK),VXGAMA(IJK,1),S_C(IJK)
+         !   END IF
+         !END DO
+         !CLOSE(2)
 ! end determine size of terms
 
 
@@ -263,72 +269,72 @@
             U_S(1,M), V_S(1,M), W_S(1,M), CpxFlux_E, CpxFlux_N, &
             CpxFlux_T, M, A_M, B_M, IER)
 			
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
 
 ! calculate standard bc
          CALL BC_PHI (T_s(1,M), BC_T_S(1,M), BC_TW_S(1,M), &
             BC_HW_T_S(1,M), BC_C_T_S(1,M), M, A_M, B_M, IER)
 			
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
 
 ! set the source terms in a and b matrix equation form
          CALL SOURCE_PHI (S_P, S_C, EPS, T_S(1,M), M, A_M, B_M, IER)
 		 
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
 
 ! Add point sources.
          IF(POINT_SOURCE) CALL POINT_SOURCE_PHI (T_s(:,M), PS_T_s(:,M),&
             PS_CpxMFLOW_s(:,M), M, A_M, B_M, IER)
 			
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
-
-      ENDDO   ! end do (m=1,tmp_smax)
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
+            
+      ENDDO                     ! end do (m=1,tmp_smax)
 
 ! use partial elimination on interphase heat transfer term
       IF (TMP_SMAX > 0 .AND. .NOT.USE_MMS) &
         CALL PARTIAL_ELIM_S (T_G, T_S, VXGAMA, A_M, B_M, IER)
 		
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+      !open (unit = 2, file = "matrices")
+      !DO I_WRITE = 1, DIMENSION_3
+      !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+      !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+      !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+      !END DO
+      !CLOSE(2)
+!END DEBUGGING
 
       CALL CALC_RESID_S (T_G, A_M, B_M, 0, NUM_RESID(RESID_T,0),&
          DEN_RESID(RESID_T,0), RESID(RESID_T,0), MAX_RESID(RESID_T,&
@@ -374,15 +380,15 @@
             LEQI, LEQM, IER)
 !         call test_lin_eq(a_m(1, -3, M), LEQI, LEQM, LEQ_SWEEP(6), LEQ_TOL(6), LEQ_PC(6),  0, ier)
 
-		 !FOR DEBUGGING PURPOSES
-		 open (unit = 2, file = "matrices")
-		 DO I_WRITE = 1, DIMENSION_3
-			WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
-			A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
-			A_M(I_WRITE,3,M), B_M(I_WRITE,M)
-		 END DO
-		 CLOSE(2)
-		 !END DEBUGGING
+!FOR DEBUGGING PURPOSES
+         !open (unit = 2, file = "matrices")
+         !DO I_WRITE = 1, DIMENSION_3
+         !   WRITE (2,*) A_M(I_WRITE,-3,M), A_M(I_WRITE,-2,M), A_M(I_WRITE,-1,M), &
+         !   A_M(I_WRITE,0,M), A_M(I_WRITE,1,M), A_M(I_WRITE,2,M), &
+         !   A_M(I_WRITE,3,M), B_M(I_WRITE,M)
+         !END DO
+         !CLOSE(2)
+!END DEBUGGING
 		 
          CALL SOLVE_LIN_EQ ('T_s', 6, T_S(1,M), A_M, B_M, M, LEQI, &
             LEQM, LEQ_SWEEP(6), LEQ_TOL(6), LEQ_PC(6), IER)

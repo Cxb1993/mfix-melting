@@ -74,8 +74,8 @@
       KAPPA_S(:) = ZERO
       SIGMA_S(:) = ZERO
       KAPPA_S(1) = 30.0d0
-      KAPPA_G = 10.0d0
-      SIGMA_G = 1.0d0
+      KAPPA_G = 0.0d0
+      SIGMA_G = 0.0d0
 
       I_DO(:,:) = ONE
 
@@ -141,6 +141,8 @@
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: S_P
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_DES
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_CONT
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: EMIS_DES
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: EMIS_CONT
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: Null_Vec, Unity_Vec
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: TMP_I_DO
       INTEGER :: IJK, ORD, IER, M
@@ -159,14 +161,20 @@
 
       CONVERGED(:) = .FALSE.
       IF(.NOT.DEBUG) THEN
-         CALL CALC_RAD_PROP(K_DES, K_CONT, EMIS, SIGMA)
+         CALL CALC_RAD_PROP(K_DES, K_CONT, EMIS_DES, EMIS_CONT, SIGMA)
          KAPPA(:) = K_DES(:) + K_CONT(:)
+         EMIS(:) = EMIS_DES(:) + EMIS_CONT(:)
       END IF
 
       DO ITS = 1, MAX_DO_ITS
          IF(ALL(CONVERGED)) EXIT
 
-         IF(.NOT. DEBUG) CALL CALC_I_W(0)
+         IF(.NOT. DEBUG) THEN 
+            CALL CALC_I_W(0)
+            CALL CALC_CUSTOM_BC2
+         END IF
+
+         !CALL PRINT_I_DO_FIELD
 
          DO ORD = 1, N_DO
             DO IJK = IJKSTART3, IJKEND3
@@ -217,7 +225,7 @@
       DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
          SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
-         S_DES(IJK) = SUM_I*K_DES(IJK)
+         S_DES(IJK) = SUM_I*K_DES(IJK)-EMIS_DES(IJK)
          S_CONT_G(IJK) = SUM_I*EP_G(IJK)*KAPPA_G
          DO M = 1, SMAX
             S_CONT_S(IJK,M) = SUM_I*EP_S(IJK,M)*KAPPA_S(M)
@@ -365,8 +373,8 @@
       IMPLICIT NONE
 
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: TMP_I_DO
-      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_DES
-      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_CONT
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_DES, EMIS_DES
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_CONT, EMIS_CONT
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: S_C
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: S_P
       INTEGER :: ORD, IJK, IER, I_WRITE, I, J, K
@@ -394,8 +402,9 @@
       END DO
       !end debugging
 
-      CALL CALC_RAD_PROP(K_DES, K_CONT, EMIS, SIGMA)
+      CALL CALC_RAD_PROP(K_DES, K_CONT, EMIS_DES, EMIS_CONT, SIGMA)
       KAPPA(:) = K_DES(:) + K_CONT(:)
+      EMIS(:) = EMIS_DES(:) + EMIS_CONT(:)
 
       IF(ANY((KAPPA(:) <= 0.0d0).AND.(FLAG(:).EQ.1))) &
          PRINT *,'Zero or negative absorptivity'
@@ -452,7 +461,7 @@
 
       END SUBROUTINE
 
-      SUBROUTINE CALC_RAD_PROP(K_DES,K_CONT,EMIS,SIGMA)
+      SUBROUTINE CALC_RAD_PROP(K_DES,K_CONT,EMIS_DES,EMIS_CONT,SIGMA)
 
       USE CONSTANT
       USE DISCRETELEMENT
@@ -472,7 +481,7 @@
 ! Passed variables
 !----------------------------------------------------------------
       DOUBLE PRECISION, DIMENSION(DIMENSION_3), INTENT(OUT) :: K_DES, &
-        K_CONT, EMIS, SIGMA
+        K_CONT, EMIS_DES, EMIS_CONT, SIGMA
 !-----------------------------------------------
 ! Local Variables
 !-----------------------------------------------
@@ -493,7 +502,8 @@
 
       K_DES(:) = ZERO
       K_CONT(:) = ZERO
-      EMIS(:) = ZERO
+      EMIS_DES(:) = ZERO
+      EMIS_CONT(:) = ZERO
       SIGMA(:) = ZERO
 
       DO IJK = IJKSTART3, IJKEND3
@@ -507,7 +517,7 @@
                M = PIJK(L,5) + SMAX
                A_P = PI*DES_RADIUS(L)**2
                K_DES(IJK) = K_DES(IJK) + DES_EM(M)*A_P*OVOL*P_IN_CELL
-               EMIS(IJK) = EMIS(IJK) + DES_EM(M)*A_P* &
+               EMIS_DES(IJK) = EMIS_DES(IJK) + DES_EM(M)*A_P* &
                   SIGMA_SB*DES_T_S_NEW(L)**4/PI*OVOL*P_IN_CELL
                SIGMA(IJK) = SIGMA(IJK)+(ONE-DES_EM(M))*A_P*  &
                   OVOL*P_IN_CELL
@@ -515,13 +525,13 @@
          END IF
 
          K_CONT(IJK) = K_CONT(IJK) + KAPPA_G*EP_G(IJK)
-         EMIS(IJK) = EMIS(IJK) + KAPPA_G*SIGMA_SB*  &
+         EMIS_CONT(IJK) = EMIS_CONT(IJK) + KAPPA_G*SIGMA_SB*  &
             T_G(IJK)**4/PI*EP_G(IJK) 
          SIGMA(IJK) = SIGMA(IJK) + SIGMA_G*EP_G(IJK)
 
          DO M = 1, SMAX
             K_CONT(IJK) = K_CONT(IJK) + KAPPA_S(M)*EP_S(IJK,M)
-            EMIS(IJK) = EMIS(IJK) + KAPPA_S(M)*SIGMA_SB*  &
+            EMIS_CONT(IJK) = EMIS_CONT(IJK) + KAPPA_S(M)*SIGMA_SB*  &
                T_S(IJK,M)**4/PI*EP_S(IJK,M)
             SIGMA(IJK) = SIGMA(IJK) + SIGMA_S(M)*EP_S(IJK,M)
          END DO
@@ -681,6 +691,122 @@
 
       END SUBROUTINE
 
+      SUBROUTINE CALC_CUSTOM_BC
+      USE PARAM1
+      USE MATRIX
+      USE GEOMETRY
+      USE INDICES
+      USE BC
+      USE COMPAR
+      USE FUN_AVG
+      USE FUNCTIONS
+      USE FLDVAR
+      USE CONSTANT
+      
+      INTEGER :: I1, J1, K1, K2, IJK, IJK_F, ORD
+      DOUBLE PRECISION :: F_LASER
+      DOUBLE PRECISION :: I_LASER
+      DOUBLE PRECISION :: SUM_S_DOWN
+      DOUBLE PRECISION :: N_MIN
+
+      F_LASER = 4.0d0/4.184d0 !Laser power in calories/sec
+      F_LASER = F_LASER/XLENGTH/YLENGTH !Laser flux in cal/sec/cm^2
+      
+      N_MIN = MINVAL(N_I(:,2))
+      SUM_S_DOWN = ZERO
+      DO ORD = 1, N_DO
+         IF(N_I(ORD,2) .EQ. N_MIN) SUM_S_DOWN = SUM_S_DOWN + & 
+            OMEGA_DO(ORD)
+      END DO
+
+      I_LASER = F_LASER / SUM_S_DOWN !redistribute laser flux to be only in downward-most directions
+
+      
+
+      J1 = JMAX2
+      DO K1 = kmin3, kmax3
+         DO I1 = imin3, imax3
+            DO ORD = 1, N_DO
+               IJK = FUNIJK(I1,J1,K1)
+               IF(N_I(ORD,2) .EQ. N_MIN) THEN 
+                  I_DO(IJK,ORD) = I_LASER
+               ELSE
+                  I_DO(IJK,ORD) = 0.0d0
+               END IF
+            END DO
+         END DO
+      END DO
+      
+      
+      END SUBROUTINE
+
+      SUBROUTINE CALC_CUSTOM_BC2
+      USE PARAM1
+      USE MATRIX
+      USE GEOMETRY
+      USE INDICES
+      USE BC
+      USE COMPAR
+      USE FUN_AVG
+      USE FUNCTIONS
+      USE FLDVAR
+      USE CONSTANT
+      USE RUN, ONLY: TIME
+      
+      INTEGER :: I1, J1, K1, K2, IJK, ORD
+      DOUBLE PRECISION :: P_LASER
+      DOUBLE PRECISION :: I_LASER
+      DOUBLE PRECISION :: SUM_S_DOWN
+      DOUBLE PRECISION :: N_MIN, SQRT2
+      DOUBLE PRECISION :: X1_C,X2_C,Z1_C,Z2_C,W_L,I_CELL
+      DOUBLE PRECISION :: X_L, Z_L, D_L
+      DOUBLE PRECISION, DIMENSION(2) :: V_L
+
+      D_L = 0.046 !0.46mm laser diameter
+      P_LASER = 4.0d0/4.184 !Laser power in cal/sec
+      V_L(1) = 750.0d0 !7.5 m/s
+      V_L(2) = ZERO
+
+      X_L = -D_L/2 + V_L(1)*TIME
+      Z_L = ZLENGTH/2.0d0 + V_L(2)*TIME
+
+      W_L = D_L/2.0d0/2.146d0
+      I_LASER = 2.0d0*P_LASER/PI/W_L**2
+      SQRT2 = SQRT(2.0d0)
+      
+      N_MIN = MINVAL(N_I(:,2))
+      SUM_S_DOWN = ZERO
+      DO ORD = 1, N_DO
+         IF(N_I(ORD,2) .EQ. N_MIN) SUM_S_DOWN = SUM_S_DOWN + & 
+            OMEGA_DO(ORD)
+      END DO
+
+      J1 = JMAX2
+      DO K1 = kmin3, kmax3
+         DO I1 = imin3, imax3
+            IJK = FUNIJK(I1,J1,K1)
+            X1_C = DBLE(I1-2)*DX(1)
+            X2_C = DBLE(I1-1)*DX(1)
+
+            Z1_C = DBLE(K1-2)*DZ(1)
+            Z2_C = DBLE(K1-1)*DZ(1)
+
+            I_CELL = I_LASER * (W_L**2) * PI/8.0d0 * &
+               ((ERF(SQRT2*(X2_C-X_L)/W_L)-ERF(SQRT2*(X1_C-X_L)/W_L))* &
+               (ERF(SQRT2*(Z2_C-Z_L)/W_L)-ERF(SQRT2*(Z1_C-Z_L)/W_L)))
+            I_CELL = I_CELL / (X2_C-X1_C) / (Z2_C-Z1_C) / SUM_S_DOWN
+            DO ORD = 1, N_DO
+               IF(N_I(ORD,2) .EQ. N_MIN) THEN 
+                  I_DO(IJK,ORD) = I_CELL
+               ELSE
+                  I_DO(IJK,ORD) = 0.0d0
+               END IF
+            END DO
+         END DO
+      END DO
+      
+      
+      END SUBROUTINE
 
       SUBROUTINE BC_DO(VAR, ORD, M, A_M, B_M, IER)
 ! Modules
@@ -874,6 +1000,32 @@
          ENDDO
       ENDDO
 
+      END SUBROUTINE
+
+      SUBROUTINE PRINT_I_DO_FIELD
+      USE PARAM1
+      USE MATRIX
+      USE GEOMETRY
+      USE INDICES
+      USE BC
+      USE COMPAR
+      USE FUN_AVG
+      USE FUNCTIONS
+
+      INTEGER I,J,K,IJK,M
+
+      OPEN(unit = 2, file = "RAD_FIELD")
+      DO M = 1, N_DO
+         DO I = IMIN3,IMAX3
+            DO J = JMIN3,JMAX3
+               DO K = KMIN3,KMAX3
+                  IJK = FUNIJK(I,J,K)
+                  WRITE (2,*) M,I,J,K,IJK,FLUID_AT(IJK),I_DO(IJK,M)
+               END DO
+            END DO
+         END DO
+      END DO
+      CLOSE(2)
       END SUBROUTINE
 
       END MODULE

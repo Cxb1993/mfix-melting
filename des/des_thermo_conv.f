@@ -270,7 +270,7 @@
 ! Source term on LHS
       DOUBLE PRECISION, INTENT(INOUT) :: S_P(DIMENSION_3)
 ! Phase index
-      DOUBLE PRECISION, INTENT(IN) :: M
+      INTEGER, INTENT(IN) :: M
 
 ! Local variables
 !---------------------------------------------------------------------//
