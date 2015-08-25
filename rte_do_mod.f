@@ -180,7 +180,7 @@
             DO IJK = IJKSTART3, IJKEND3
                S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA_DO(ORD)*VOL(IJK)
             !Isentropic scattering
-               S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(KAPPA(IJK)*EMIS(IJK) + &
+               S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(EMIS(IJK) + &
                   SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA_DO(:))+ &
                   SOURCE(IJK,ORD))
             END DO
@@ -225,7 +225,7 @@
       DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
          SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
-         S_DES(IJK) = SUM_I*K_DES(IJK)-EMIS_DES(IJK)
+         S_DES(IJK) = SUM_I*K_DES(IJK)-4.0d0*PI*EMIS_DES(IJK)
          S_CONT_G(IJK) = SUM_I*EP_G(IJK)*KAPPA_G
          DO M = 1, SMAX
             S_CONT_S(IJK,M) = SUM_I*EP_S(IJK,M)*KAPPA_S(M)
@@ -763,7 +763,7 @@
       DOUBLE PRECISION, DIMENSION(2) :: V_L
 
       D_L = 0.046 !0.46mm laser diameter
-      P_LASER = 4.0d0/4.184 !Laser power in cal/sec
+      P_LASER = 11.5d0/4.184 !Laser power in cal/sec
       V_L(1) = 750.0d0 !7.5 m/s
       V_L(2) = ZERO
 
