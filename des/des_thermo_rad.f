@@ -49,15 +49,8 @@
 ! Particle Emmisivity
       DOUBLE PRECISION :: lEm
       INTEGER :: IJK, J
-	  
-      DO J = 2, PART_CELLS(I,1) + 1 
-         IJK = PART_CELLS(I,J)
-         IF(.NOT.FLUID_AT(IJK)) CYCLE
-         IF(PART_VOL_INTERSEC(IJK,I) == 0.0d0) CYCLE
-         Q_SOURCE(I) = Q_SOURCE(I) + &
-           PART_VOL_INTERSEC(IJK,I)/TOT_VOL_INTERSEC(IJK)*&
-           S_DES(IJK)*VOL(IJK)
-      END DO
+
+      Q_SOURCE(I) = Q_SOURCE(I) + S_DES(I)
 
       RETURN
 

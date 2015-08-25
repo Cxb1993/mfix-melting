@@ -45,5 +45,6 @@
 !  Insert user-defined code here
 !
       CALL INIT_RTE_DO
+      !CALL MANUFACTURE_SOLUTION
       RETURN
       END SUBROUTINE USR0

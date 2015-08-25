@@ -20,7 +20,7 @@
 
       use output, only: SPX_DT
       USE fldvar, only: EP_g, ROP_g, ROP_s
-      use des_thermo, only: DES_ENERGY_SOURCE
+      use des_thermo, only: DES_ENERGY_SOURCE,DES_T_S_NEW
       use run, only: TIME, TSTOP, DT
 
       use mpi_funs_des, only: DES_PAR_EXCHANGE

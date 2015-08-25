@@ -2,7 +2,7 @@
 !!**  Module RTE_DO
 !!****************************************************************
       MODULE RTE_DO
-! Module to solve the Radiative Transport Equation (RTE) via Discrete Ordinates (DO)
+!!Module to solve the Radiative Transport Equation (RTE) via Discrete Ordinates (DO)
       USE PARAM
       IMPLICIT NONE
 
@@ -17,12 +17,12 @@
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: S_DES, S_CONT_G
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: KAPPA, SIGMA, EMIS
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE :: KAPPA_S, SIGMA_S
-      DOUBLE PRECISION :: KAPPA_G, SIGMA_G
+      DOUBLE PRECISION :: KAPPA_G, SIGMA_G, KAPPA_DES, SIGMA_DES
       DOUBLE PRECISION :: D_THETA, D_PHI
       DOUBLE PRECISION :: EMIS_W = 1.0d0
       DOUBLE PRECISION :: SIGMA_SB
-      INTEGER :: N_THETA = 5
-      INTEGER :: N_PHI = 10
+      INTEGER :: N_THETA = 4
+      INTEGER :: N_PHI = 8
       DOUBLE PRECISION :: DO_TOL = 1.0D-6
       INTEGER :: MAX_DO_ITS = 100
       INTEGER :: N_DO
@@ -36,6 +36,7 @@
       USE PARAM1
       USE GEOMETRY
       USE RUN
+      USE DISCRETELEMENT
 
       IMPLICIT NONE
 
@@ -69,13 +70,15 @@
       ALLOCATE( SIGMA_S(DIMENSION_M))
       ALLOCATE( S_CONT_S(DIMENSION_3,DIMENSION_M))
       ALLOCATE( S_CONT_G(DIMENSION_3))
-      ALLOCATE( S_DES(DIMENSION_3))
+      ALLOCATE( S_DES(MAX_PIP))
 
       KAPPA_S(:) = ZERO
       SIGMA_S(:) = ZERO
-      KAPPA_S(1) = 30.0d0
+      KAPPA_S(1) = 3000.0d0
       KAPPA_G = 0.0d0
       SIGMA_G = 0.0d0
+      KAPPA_DES = 3000.0d0
+      SIGMA_DES = 0.0d0
 
       I_DO(:,:) = ONE
 
@@ -132,6 +135,8 @@
       USE CONSTANT
       USE FLDVAR
       USE PHYSPROP, ONLY: SMAX
+      USE DISCRETELEMENT
+      USE DES_THERMO
 
       IMPLICIT NONE
 
@@ -145,7 +150,7 @@
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: EMIS_CONT
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: Null_Vec, Unity_Vec
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: TMP_I_DO
-      INTEGER :: IJK, ORD, IER, M
+      INTEGER :: IJK, ORD, IER, M, L, IND
       DOUBLE PRECISION :: RES1, MAX_RES1, NUM_RES, DEN_RES, SUM_I
       INTEGER :: IJK_RES
       LOGICAL, DIMENSION(N_DO) :: CONVERGED
@@ -180,14 +185,14 @@
             DO IJK = IJKSTART3, IJKEND3
                S_P(IJK) = (KAPPA(IJK)+SIGMA(IJK))*OMEGA_DO(ORD)*VOL(IJK)
             !Isentropic scattering
-               S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(KAPPA(IJK)*EMIS(IJK) + &
-                  SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA_DO(:))+ &
+               S_C(IJK) = OMEGA_DO(ORD)*VOL(IJK)*(EMIS(IJK) +  &
+                  SIGMA(IJK)/4.0d0/PI*SUM(I_DO(IJK,:)*OMEGA_DO(:)) +  &
                   SOURCE(IJK,ORD))
             END DO
             TMP_I_DO(:,ORD) = I_DO(:,ORD)
             CALL LOCK_AMBM
             CALL INIT_AB_M (A_M, B_M, IJKMAX2, 0, IER)
-            CALL CONV_DIF_PHI (TMP_I_DO(1,ORD),Null_Vec,DISCRETIZE(6), &
+            CALL CONV_DIF_PHI (TMP_I_DO(1,ORD),Null_Vec, 0, &
                U_DO(1,ORD), V_DO(1,ORD), W_DO(1,ORD), Flux_E_DO(1,ORD),& 
                Flux_N_DO(1,ORD), Flux_T_DO(1,ORD), 0, A_M, B_M, IER)
          
@@ -225,12 +230,36 @@
       DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
          SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
-         S_DES(IJK) = SUM_I*K_DES(IJK)-EMIS_DES(IJK)
          S_CONT_G(IJK) = SUM_I*EP_G(IJK)*KAPPA_G
          DO M = 1, SMAX
             S_CONT_S(IJK,M) = SUM_I*EP_S(IJK,M)*KAPPA_S(M)
          END DO
       END DO
+
+      IF(DISCRETE_ELEMENT) THEN
+         DO L = 1, MAX_PIP
+            DO IND = 2, PART_CELLS(L,1) + 1 
+               IJK = PART_CELLS(L,IND)
+               SUM_I = (SUM(I_DO(IJK,:) * OMEGA_DO(:))*K_DES(IJK)  &
+                  - 4.0d0 * PI * EMIS_DES(IJK))*VOL(IJK)
+               S_DES(L) = S_DES(L)+PART_VOL_INTERSEC(IJK,L) / &
+                  TOT_VOL_INTERSEC(IJK)*SUM_I
+            END DO
+         END DO
+      END IF
+
+      !IF(DISCRETE_ELEMENT) THEN
+      !   DO L = 1, MAX_PIP
+      !      DO IND = 2, PART_CELLS(L,1) + 1 
+      !         IJK = PART_CELLS(L,IND)
+      !         SUM_I = SUM(I_DO(IJK,:)*OMEGA_DO(:))
+      !         S_DES(L) = S_DES(L)+PART_VOL_INTERSEC(IJK,L)*KAPPA_DES* &
+      !            (SUM_I - 4.0d0 * SIGMA_SB * DES_T_S_NEW(L)**4)
+      !      END DO
+      !   END DO
+      !END IF
+
+      !CALL PRINT_I_DO_FIELD
 
       END SUBROUTINE
 
@@ -254,17 +283,26 @@
 
       DOUBLE PRECISION, DIMENSION(DIMENSION_3,N_DO) :: I_SOL, SOURCE
       DOUBLE PRECISION :: X, Y, Z
-      DOUBLE PRECISION :: TEMP = 463.0d0
+      DOUBLE PRECISION :: TEMP = 300.0d0
       INTEGER :: I, J, K, IJK, ORD
       DOUBLE PRECISION, DIMENSION(3) :: GRAD_I
       DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: INT_I
       DOUBLE PRECISION, DIMENSION(N_DO) :: NUM_RES, DEN_RES 
       DOUBLE PRECISION :: NUM_RES_TOT, DEN_RES_TOT, SUM_I
-      
+
+      !For debugging the new method of calculating K
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_DES
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: K_CONT
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: EMIS_DES
+      DOUBLE PRECISION, DIMENSION(DIMENSION_3) :: EMIS_CONT
+      !End debugging
+
       !Set up parameters
       I_DO(:,:) = ONE
-      KAPPA(:) = ONE
-      EMIS(:) = SIGMA_SB*TEMP**4/PI
+      CALL CALC_RAD_PROP(K_DES, K_CONT, EMIS_DES, EMIS_CONT, SIGMA)
+      KAPPA(:) = K_DES(:) + K_CONT(:) 
+      !KAPPA(:) = 1000.d0
+      EMIS(:) = KAPPA(:)*SIGMA_SB*TEMP**4/PI
       SIGMA(:) = ZERO
       
 
@@ -331,6 +369,7 @@
       END DO
       !Solve
       CALL SOLVE_RTE_DO(SOURCE, .TRUE.)
+      CALL PRINT_I_DO_FIELD
 
       !Calculate and print residuals
       DO IJK = IJKSTART3, IJKEND3
@@ -346,7 +385,8 @@
 
       DO ORD = 1, N_DO
          PRINT *,'Residual for ordinate', &
-           ORD,THETA_DO(ORD),PHI_DO(ORD),SQRT(NUM_RES(ORD)/DEN_RES(ORD))
+           ORD,THETA_DO(ORD),PHI_DO(ORD),N_I(ORD,1),N_I(ORD,2), &
+           N_I(ORD,3),SQRT(NUM_RES(ORD)/DEN_RES(ORD))
       END DO
 
       PRINT *,'Total residual',SQRT(NUM_RES_TOT/DEN_RES_TOT)
@@ -506,23 +546,23 @@
       EMIS_CONT(:) = ZERO
       SIGMA(:) = ZERO
 
+      IF(DISCRETE_ELEMENT) THEN
+         DO L = 1, MAX_PIP
+            DO J = 2, PART_CELLS(L,1) + 1 
+               IJK = PART_CELLS(L,J)
+               P_IN_CELL = PART_VOL_INTERSEC(IJK,L)/VOL(IJK)
+               K_DES(IJK) = K_DES(IJK) + KAPPA_DES*P_IN_CELL
+               EMIS_DES(IJK) = EMIS_DES(IJK) + KAPPA_DES * SIGMA_SB * &
+                  DES_T_S_NEW(L)**4 / PI * P_IN_CELL
+               SIGMA(IJK) = SIGMA(IJK) + SIGMA_DES * P_IN_CELL
+            END DO
+         END DO
+      END IF
+
+         
+
       DO IJK = IJKSTART3, IJKEND3
          IF(.NOT.FLUID_AT(IJK)) CYCLE
-         OVOL = ONE/VOL(IJK)
-         IF(DISCRETE_ELEMENT) THEN
-            DO L = 1, MAX_PIP
-               IF(.NOT.PEA(L,1)) CYCLE
-               IF(PART_VOL_INTERSEC(IJK,L) == ZERO) CYCLE
-               P_IN_CELL = PART_VOL_INTERSEC(IJK,L)/PVOL(L)
-               M = PIJK(L,5) + SMAX
-               A_P = PI*DES_RADIUS(L)**2
-               K_DES(IJK) = K_DES(IJK) + DES_EM(M)*A_P*OVOL*P_IN_CELL
-               EMIS_DES(IJK) = EMIS_DES(IJK) + DES_EM(M)*A_P* &
-                  SIGMA_SB*DES_T_S_NEW(L)**4/PI*OVOL*P_IN_CELL
-               SIGMA(IJK) = SIGMA(IJK)+(ONE-DES_EM(M))*A_P*  &
-                  OVOL*P_IN_CELL
-            END DO
-         END IF
 
          K_CONT(IJK) = K_CONT(IJK) + KAPPA_G*EP_G(IJK)
          EMIS_CONT(IJK) = EMIS_CONT(IJK) + KAPPA_G*SIGMA_SB*  &
@@ -763,7 +803,7 @@
       DOUBLE PRECISION, DIMENSION(2) :: V_L
 
       D_L = 0.046 !0.46mm laser diameter
-      P_LASER = 4.0d0/4.184 !Laser power in cal/sec
+      P_LASER = 11.5d0/4.184 !Laser power in cal/sec
       V_L(1) = 750.0d0 !7.5 m/s
       V_L(2) = ZERO
 
@@ -1011,19 +1051,34 @@
       USE COMPAR
       USE FUN_AVG
       USE FUNCTIONS
+      USE DISCRETELEMENT
+      USE DES_THERMO
 
       INTEGER I,J,K,IJK,M
 
       OPEN(unit = 2, file = "RAD_FIELD")
+      OPEN(unit = 3, file = "K_EMIS_SRC")
       DO M = 1, N_DO
          DO I = IMIN3,IMAX3
             DO J = JMIN3,JMAX3
                DO K = KMIN3,KMAX3
                   IJK = FUNIJK(I,J,K)
                   WRITE (2,*) M,I,J,K,IJK,FLUID_AT(IJK),I_DO(IJK,M)
+                  IF(M .EQ. 1) THEN
+                     WRITE (3,*) I,J,K,IJK,FLUID_AT(IJK),KAPPA(IJK), &
+                        EMIS(IJK),SUM(I_DO(IJK,:)*OMEGA_DO(:)), &
+                        S_CONT_G(IJK),S_CONT_S(IJK,1)
+                  END IF
                END DO
             END DO
          END DO
+      END DO
+      CLOSE(2)
+      CLOSE(3)
+
+      OPEN(unit = 2, file = "DES_SRC")
+      DO M = 1, MAX_PIP
+         WRITE (2,*) M,DES_T_S_NEW(M),S_DES(M)
       END DO
       CLOSE(2)
       END SUBROUTINE
